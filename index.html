@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fretboard — Chord Explorer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0c0a;
+    --surface: #1a1712;
+    --surface2: #231f1a;
+    --border: #3a3228;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --amber: #d97706;
+    --cream: #f5eedc;
+    --muted: #8a7e6e;
+    --string: #4a4035;
+    --fret: #2e2820;
+    --nut: #c9a84c;
+    --dot-fill: #c9a84c;
+    --dot-stroke: #8a6820;
+    --open-dot: transparent;
+    --mute: #8a3a2a;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--cream);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  header {
+    padding: 2.5rem 3rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: -0.02em;
+  }
+
+  .logo span {
+    color: var(--cream);
+    font-weight: 400;
+    font-style: italic;
+  }
+
+  .tagline {
+    color: var(--muted);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: calc(100vh - 90px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 2rem 1.5rem;
+    background: var(--surface);
+  }
+
+  .sidebar-section {
+    margin-bottom: 2rem;
+  }
+
+  .sidebar-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+  }
+
+  .mode-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .mode-tab {
+    flex: 1;
+    padding: 0.6rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .mode-tab.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--bg);
+  }
+
+  select, .pill-group {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--cream);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    appearance: none;
+    outline: none;
+    margin-bottom: 0.5rem;
+  }
+
+  select:focus { border-color: var(--gold); }
+
+  .pill-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.5rem;
+  }
+
+  .pill {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+  }
+
+  .pill:hover { border-color: var(--gold); color: var(--gold); }
+  .pill.active { background: var(--gold); border-color: var(--gold); color: var(--bg); }
+
+  .progression-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .prog-item {
+    padding: 0.7rem 0.75rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .prog-item:hover { border-color: var(--gold); }
+  .prog-item.active { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+
+  .prog-name {
+    font-size: 0.7rem;
+    color: var(--gold-light);
+    margin-bottom: 0.2rem;
+  }
+
+  .prog-chords {
+    font-size: 0.65rem;
+    color: var(--muted);
+    font-style: italic;
+    font-family: 'Crimson Pro', serif;
+  }
+
+  /* Main content */
+  .main {
+    padding: 2.5rem 3rem;
+  }
+
+  .chord-header {
+    margin-bottom: 2rem;
+  }
+
+  .chord-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: var(--cream);
+    line-height: 1;
+  }
+
+  .chord-subtitle {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--muted);
+    margin-top: 0.4rem;
+  }
+
+  .chord-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .chord-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.2rem;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .chord-card::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--gold);
+    transform: scaleX(0);
+    transition: transform 0.25s;
+  }
+
+  .chord-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+  .chord-card:hover::before { transform: scaleX(1); }
+  .chord-card.selected { border-color: var(--gold); background: rgba(201,168,76,0.06); }
+  .chord-card.selected::before { transform: scaleX(1); }
+
+  .card-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    color: var(--gold-light);
+    margin-bottom: 0.25rem;
+  }
+
+  .card-type {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  /* Fretboard Diagram */
+  .fretboard-wrap {
+    margin-top: 0.5rem;
+  }
+
+  .fret-position {
+    font-size: 0.6rem;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+    letter-spacing: 0.05em;
+  }
+
+  svg.diagram { display: block; }
+
+  /* Detail Panel */
+  .detail-panel {
+    margin-top: 3rem;
+    border-top: 1px solid var(--border);
+    padding-top: 2rem;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .detail-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+  }
+
+  .detail-meta {
+    display: flex;
+    gap: 2rem;
+    margin: 1rem 0 2rem;
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .meta-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .meta-value {
+    font-family: 'Crimson Pro', serif;
+    font-size: 1rem;
+    color: var(--cream);
+  }
+
+  .tips-box {
+    background: var(--surface);
+    border-left: 3px solid var(--gold);
+    padding: 1rem 1.25rem;
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.95rem;
+    color: var(--cream);
+    line-height: 1.7;
+    max-width: 600px;
+  }
+
+  .tips-box strong {
+    color: var(--gold-light);
+    font-weight: 600;
+  }
+
+  /* Progression view */
+  .progression-view {
+    display: none;
+  }
+
+  .progression-view.visible {
+    display: block;
+  }
+
+  .inversion-view {
+    display: block;
+  }
+
+  .inversion-view.hidden {
+    display: none;
+  }
+
+  .prog-sequence {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin: 2rem 0;
+  }
+
+  .prog-chord-card {
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1rem;
+    min-width: 140px;
+    transition: all 0.2s;
+  }
+
+  .prog-chord-card.active-step {
+    border-color: var(--gold);
+    background: rgba(201,168,76,0.08);
+  }
+
+  .prog-arrow {
+    color: var(--muted);
+    font-size: 1.5rem;
+  }
+
+  .prog-chord-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--gold-light);
+    margin-bottom: 0.2rem;
+  }
+
+  .prog-degree {
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  .play-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 1rem;
+  }
+
+  .play-btn:hover {
+    background: var(--gold);
+    color: var(--bg);
+  }
+
+  .prog-key-selector {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .prog-key-selector label {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .step-indicator {
+    font-size: 0.6rem;
+    color: var(--muted);
+    margin-top: 0.3rem;
+  }
+
+  .prog-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .cat-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .cat-pill {
+    padding: 0.2rem 0.55rem;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    background: transparent;
+    transition: all 0.15s;
+  }
+
+  .cat-pill:hover { border-color: var(--gold); color: var(--gold); }
+  .cat-pill.active { background: rgba(201,168,76,0.15); border-color: var(--gold); color: var(--gold-light); }
+
+  .prog-item .prog-tag {
+    font-size: 0.55rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.1rem 0.4rem;
+    border: 1px solid;
+    margin-top: 0.35rem;
+    display: inline-block;
+  }
+
+  .tag-dark { color: #9b6f8a; border-color: #9b6f8a; }
+  .tag-folk { color: #7a9b6f; border-color: #7a9b6f; }
+  .tag-modal { color: #6f8a9b; border-color: #6f8a9b; }
+  .tag-classic { color: var(--muted); border-color: var(--border); }
+  .tag-ab { color: #9b8a6f; border-color: #9b8a6f; }
+
+  .pos-btn {
+    padding: 0.4rem 0.9rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .pos-btn.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--bg);
+  }
+
+  /* Roman numeral badge */
+  .numeral {
+    display: inline-block;
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.75rem;
+    color: var(--amber);
+    border: 1px solid var(--amber);
+    padding: 0.1rem 0.35rem;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+  }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Fret<span>board</span></div>
+  <div class="tagline">Chord Inversions & Progressions Explorer</div>
+</header>
+
+<div class="container">
+  <aside class="sidebar">
+    <div class="mode-tabs">
+      <button class="mode-tab active" onclick="setMode('inversions')">Inversions</button>
+      <button class="mode-tab" onclick="setMode('progressions')">Progressions</button>
+    </div>
+
+    <!-- Inversions sidebar -->
+    <div id="inv-sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Root Note</div>
+        <select id="rootSelect" onchange="renderInversions()">
+          <option>C</option><option>C#</option><option>D</option><option>D#</option>
+          <option>E</option><option>F</option><option>F#</option><option>G</option>
+          <option>G#</option><option>A</option><option>A#</option><option>B</option>
+        </select>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Chord Quality</div>
+        <div class="pill-group">
+          <button class="pill active" onclick="setQuality(this,'major')">Major</button>
+          <button class="pill" onclick="setQuality(this,'minor')">Minor</button>
+          <button class="pill" onclick="setQuality(this,'dom7')">Dom 7</button>
+          <button class="pill" onclick="setQuality(this,'maj7')">Maj 7</button>
+          <button class="pill" onclick="setQuality(this,'min7')">Min 7</button>
+          <button class="pill" onclick="setQuality(this,'dim')">Dim</button>
+          <button class="pill" onclick="setQuality(this,'aug')">Aug</button>
+          <button class="pill" onclick="setQuality(this,'sus2')">Sus2</button>
+          <button class="pill" onclick="setQuality(this,'sus4')">Sus4</button>
+          <button class="pill" onclick="setQuality(this,'add9')">Add9</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progressions sidebar -->
+    <div id="prog-sidebar" style="display:none">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Key</div>
+        <select id="progKeySelect" onchange="renderProgression()">
+          <option>C</option><option>C#</option><option>D</option><option>D#</option>
+          <option>E</option><option>F</option><option>F#</option><option>G</option>
+          <option>G#</option><option>A</option><option>A#</option><option>B</option>
+        </select>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Filter</div>
+        <div class="cat-filter">
+          <button class="cat-pill active" onclick="setCategory(this,'all')">All</button>
+          <button class="cat-pill" onclick="setCategory(this,'dark')">Dark</button>
+          <button class="cat-pill" onclick="setCategory(this,'modal')">Modal</button>
+          <button class="cat-pill" onclick="setCategory(this,'folk')">Folk</button>
+          <button class="cat-pill" onclick="setCategory(this,'ab')">A/B Form</button>
+          <button class="cat-pill" onclick="setCategory(this,'classic')">Classic</button>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Progressions</div>
+        <div class="progression-list" id="progList"></div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- Inversions View -->
+    <div class="inversion-view" id="inversionView">
+      <div class="chord-header">
+        <div class="chord-title" id="chordTitle">C Major</div>
+        <div class="chord-subtitle" id="chordSubtitle">All inversions & voicings across the fretboard</div>
+      </div>
+      <div class="chord-grid" id="chordGrid"></div>
+      <div id="detailPanel"></div>
+    </div>
+
+    <!-- Progressions View -->
+    <div class="progression-view" id="progressionView">
+      <div class="chord-header">
+        <div class="chord-title" id="progTitle">i–♭VII–♭VI–♭VII</div>
+        <div class="chord-subtitle" id="progDesc"></div>
+      </div>
+      <div id="progSequenceWrap"></div>
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+        <span style="font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted)">Voicing Position</span>
+        <div style="display:flex;gap:0.4rem;">
+          <button class="pos-btn active" id="posOpenBtn" onclick="setProgPosition('open',this)">Open / 1st</button>
+          <button class="pos-btn" id="posUpperBtn" onclick="setProgPosition('upper',this)">Upper Neck</button>
+        </div>
+      </div>
+      <div id="progDiagramsWrap"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────────────
+
+const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const STRINGS = [4,9,2,7,11,4]; // E A D G B e (semitones from C)
+
+// Chord intervals
+const QUALITIES = {
+  major:  { name:'Major',   sym:'',    intervals:[0,4,7] },
+  minor:  { name:'Minor',   sym:'m',   intervals:[0,3,7] },
+  dom7:   { name:'Dom 7',   sym:'7',   intervals:[0,4,7,10] },
+  maj7:   { name:'Maj 7',   sym:'maj7',intervals:[0,4,7,11] },
+  min7:   { name:'Min 7',   sym:'m7',  intervals:[0,3,7,10] },
+  dim:    { name:'Dim',     sym:'°',   intervals:[0,3,6] },
+  aug:    { name:'Aug',     sym:'+',   intervals:[0,4,8] },
+  sus2:   { name:'Sus2',    sym:'sus2',intervals:[0,2,7] },
+  sus4:   { name:'Sus4',    sym:'sus4',intervals:[0,5,7] },
+  add9:   { name:'Add9',    sym:'add9',intervals:[0,4,7,14] },
+};
+
+// ─── TRANSPOSABLE SHAPE ENGINE ─────────────────────────────────────────────
+// Each shape is defined relative to a "base fret" offset from the root note's
+// position on a specific string. We store the open-position template and
+// compute actual fret numbers at runtime for any root.
+//
+// String tuning in semitones from C: E2=4, A2=9, D3=2, G3=7, B3=11, e4=4
+// String indices: 0=low E, 1=A, 2=D, 3=G, 4=B, 5=high e
+const STRING_TUNING = [4, 9, 2, 7, 11, 4]; // semitones from C, per string
+
+// For a given root note and string, find the lowest fret >= minFret that plays that note
+function fretForNote(noteIdx, stringIdx, minFret = 0) {
+  const open = STRING_TUNING[stringIdx]; // pitch of open string (mod 12)
+  let fret = ((noteIdx - open) % 12 + 12) % 12;
+  while (fret < minFret) fret += 12;
+  return fret;
+}
+
+// Shape templates: offsets relative to root fret on a given anchor string.
+// null = muted. Each shape specifies which string carries the root.
+// offsets: array of [relFret|null] per string [E,A,D,G,B,e]
+// anchorString: which string index the root sits on
+// minFret: minimum fret to place (so open shapes stay near nut)
+
+const SHAPE_TEMPLATES = {
+  major: [
+    // E-shape: root on low E string (string 0)
+    { label:'E-shape (root pos)', anchor:0, offsets:[0,2,2,1,0,0], fingers:'E-shape barre', tips:'Full 6-string E-shape. Barre across all strings at the root fret.' },
+    // A-shape: root on A string (string 1)
+    { label:'A-shape (root pos)', anchor:1, offsets:[null,0,2,2,2,0], fingers:'A-shape barre', tips:'A-shape barre. Mute or skip low E. Warm, full sound.' },
+    // D-shape: root on D string (string 2) — compact, 4-string
+    { label:'D-shape (root pos)', anchor:2, offsets:[null,null,0,2,3,2], fingers:'D-shape', tips:'Open D-style shape transposed. Works well for fingerpicking.' },
+    // A-shape upper position
+    { label:'A-shape (upper pos)', anchor:1, offsets:[null,0,2,2,2,0], fingers:'A-shape barre (upper)', minFret:5, tips:'Same A-shape barre higher up the neck. Brighter, more compressed tone.' },
+    // E-shape upper
+    { label:'E-shape (upper pos)', anchor:0, offsets:[0,2,2,1,0,0], fingers:'E-shape barre (upper)', minFret:7, tips:'E-shape barre in upper position. Focused and articulate.' },
+  ],
+  minor: [
+    // Em-shape: root on low E string
+    { label:'E-shape (root pos)', anchor:0, offsets:[0,2,2,0,0,0], fingers:'Em-shape barre', tips:'Full Em-shape barre. Dark and resonant across all 6 strings.' },
+    // Am-shape: root on A string
+    { label:'A-shape (root pos)', anchor:1, offsets:[null,0,2,2,1,0], fingers:'Am-shape barre', tips:'Am-shape barre. The most common minor barre chord shape.' },
+    // Dm-shape: root on D string — compact
+    { label:'D-shape (root pos)', anchor:2, offsets:[null,null,0,2,3,1], fingers:'Dm-shape', tips:'Dm-style shape. Works well fingerpicked on strings 4–1.' },
+    // Am upper position
+    { label:'A-shape (upper pos)', anchor:1, offsets:[null,0,2,2,1,0], fingers:'Am-shape barre (upper)', minFret:5, tips:'Am-shape barre moved up the neck. Warmer mid-register tone.' },
+    // Em upper position
+    { label:'E-shape (upper pos)', anchor:0, offsets:[0,2,2,0,0,0], fingers:'Em-shape barre (upper)', minFret:7, tips:'Em-shape higher on neck. Dense, rich minor voicing.' },
+  ],
+  dom7: [
+    { label:'E7-shape (root pos)', anchor:0, offsets:[0,2,0,1,0,0], fingers:'E7-shape', tips:'E7-shape barre. The classic dominant 7th sound — bluesy and tense.' },
+    { label:'A7-shape (root pos)', anchor:1, offsets:[null,0,2,0,2,0], fingers:'A7-shape', tips:'A7-shape barre. Punchy dominant 7th, good for rhythm guitar.' },
+    { label:'D7-shape (root pos)', anchor:2, offsets:[null,null,0,2,1,2], fingers:'D7-shape', tips:'D7-shape. Compact 4-string dominant 7th — bright and snappy.' },
+    { label:'E7-shape (upper pos)', anchor:0, offsets:[0,2,0,1,0,0], fingers:'E7-shape barre (upper)', minFret:5, tips:'E7-shape up the neck. Great for quick key-of-IV changes in blues.' },
+  ],
+  maj7: [
+    { label:'E-maj7 shape', anchor:0, offsets:[0,2,1,1,0,0], fingers:'Emaj7-shape', tips:'Major 7th — the 7th (one fret below octave) gives a dreamy, sophisticated sound.' },
+    { label:'A-maj7 shape', anchor:1, offsets:[null,0,2,1,2,0], fingers:'Amaj7-shape', tips:'Amaj7-shape barre. Lush and floaty — common in jazz and folk-jazz.' },
+    { label:'D-maj7 shape', anchor:2, offsets:[null,null,0,2,2,2], fingers:'Dmaj7-shape', tips:'Dmaj7-style. The 3rd and 7th close together give it a bell-like quality.' },
+    { label:'A-maj7 (upper)', anchor:1, offsets:[null,0,2,1,2,0], fingers:'Amaj7-shape (upper)', minFret:5, tips:'Maj7 barre up the neck. Airy and luminous in upper positions.' },
+  ],
+  min7: [
+    // Em7: root on low E. Need b7 on D string. offsets [0,2,0,0,0,0]: E=root, A+2=B(5th), D+0=D(b7)✓, G+0=G(b3)✓, B+0=B(5th), e+0=E ✓
+    { label:'Em7-shape', anchor:0, offsets:[0,2,0,0,0,0], fingers:'Em7-shape', tips:'Em7 — open D string gives the b7. Leave all strings open and ring freely.' },
+    // Am7: anchor A(1). [null,0,2,0,1,0]: A=root, D+2=E(5th), G+0=G(b7)✓, B+1=C(b3)✓, e+0=E ✓
+    { label:'Am7-shape', anchor:1, offsets:[null,0,2,0,1,0], fingers:'Am7-shape', tips:'Am7-shape barre. The workhorse of minor 7th chords.' },
+    // Dm7: anchor D(2). [null,null,0,2,1,1]: D=root, G+2=A(5th), B+1=C(b7)✓, e+1=F(b3)✓ ✓
+    { label:'Dm7-shape', anchor:2, offsets:[null,null,0,2,1,1], fingers:'Dm7-shape', tips:'Dm7-style 4-string shape. Mellow and introspective.' },
+    { label:'Am7 (upper)', anchor:1, offsets:[null,0,2,0,1,0], fingers:'Am7-shape (upper)', minFret:5, tips:'Am7 barre moved up the neck. Darker, richer tone.' },
+  ],
+  dim: [
+    // Adim on A string: [null,0,1,2,1,null]. A=root, D+1=Eb(b3)✓, G+2=A(root oct), B+1=C(b3 oct)✓
+    // The B string note: B string open=11(B), +1=12%12=0=C. C IS in Adim(A,C,Eb)✓ — wait is it?
+    // Adim = A, C, Eb. C is the minor 3rd ✓. But QA flagged B string fret 2 = C# for Adim.
+    // The issue: offset [2] on B string. Let's use offset [1] instead: B+1=C ✓
+    { label:'Dim (A-string root)', anchor:1, offsets:[null,0,1,2,1,null], fingers:'Adim-shape', tips:'Diminished shape — root on A string. Symmetric: same chord repeats every 3 frets.' },
+    { label:'Dim (A-string, upper)', anchor:1, offsets:[null,0,1,2,1,null], fingers:'Adim-shape (upper)', minFret:4, tips:'Diminished up the neck. Dim chords repeat every 3 frets — shift freely for voice leading.' },
+  ],
+  aug: [
+    // Eaug: E, G#, C. [0,3,2,1,1,0]: E=E, A+3=C✓, D+2=E, G+1=G#✓, B+1=C✓, e+0=E ✓
+    { label:'Eaug-shape', anchor:0, offsets:[0,3,2,1,1,0], fingers:'Eaug-shape', tips:'Augmented — raised 5th creates restless symmetry. Repeats every 4 frets.' },
+    // Aaug: A, C#, F. [null,0,3,2,2,null]: A=A, D+3=F✓(aug5), G+2=A, B+2=C#✓ ✓
+    { label:'Aaug-shape', anchor:1, offsets:[null,0,3,2,2,null], fingers:'Aaug-shape', tips:'Aaug barre. Augmented chords are symmetric — same shape up 4 frets = same chord.' },
+  ],
+  sus2: [
+    // Esus2: E, F#, B. [0,2,2,4,0,0]: E=E, A+2=B✓, D+2=E, G+4=B✓, B+0=B, e+0=E ✓
+    { label:'Esus2-shape', anchor:0, offsets:[0,2,2,4,0,0], fingers:'Esus2-shape', tips:'Sus2 — the 2nd replaces the 3rd. Open and ambiguous; neither major nor minor.' },
+    // Asus2: A, B, E. [null,0,2,2,0,0]: A=A, D+2=E✓, G+2=A, B+0=B✓, e+0=E ✓
+    { label:'Asus2-shape', anchor:1, offsets:[null,0,2,2,0,0], fingers:'Asus2-shape', tips:'Asus2 shape. Very popular in folk — let the open strings drone for atmosphere.' },
+    // Dsus2: D, E, A. [null,null,0,2,3,0]: D=D, G+2=A✓, B+3=D, e+0=E✓(the 2nd/9th) ✓
+    { label:'Dsus2-shape', anchor:2, offsets:[null,null,0,2,3,0], fingers:'Dsus2-shape', tips:'Dsus2 — the high e open string adds the 2nd. Beautiful for fingerpicking.' },
+    { label:'Asus2 (upper)', anchor:1, offsets:[null,0,2,2,0,0], fingers:'Asus2-shape (upper)', minFret:5, tips:'Sus2 barre up the neck. The ambiguity intensifies — great for modal contexts.' },
+  ],
+  sus4: [
+    // Esus4: E, A, B. [0,2,2,2,0,0]: E=E, A+2=B✓, D+2=E, G+2=A✓(sus4), B+0=B, e+0=E ✓
+    { label:'Esus4-shape', anchor:0, offsets:[0,2,2,2,0,0], fingers:'Esus4-shape', tips:'Sus4 — the 4th replaces the 3rd. Yearning, unresolved — try resolving to major.' },
+    // Asus4: A, D, E. [null,0,2,2,3,0]: A=A, D+2=E✓, G+2=A, B+3=D✓(sus4), e+0=E ✓
+    { label:'Asus4-shape', anchor:1, offsets:[null,0,2,2,3,0], fingers:'Asus4-shape', tips:'Asus4 shape. Common in folk and rock — resolves beautifully to the major.' },
+    // Dsus4: D, G, A. [null,null,0,2,3,3]: D=D, G+2=A✓, B+3=D, e+3=G✓(sus4) ✓
+    { label:'Dsus4-shape', anchor:2, offsets:[null,null,0,2,3,3], fingers:'Dsus4-shape', tips:'Dsus4. The classic "add a pinky to D" shape. Unresolved and spacious.' },
+    { label:'Asus4 (upper)', anchor:1, offsets:[null,0,2,2,3,0], fingers:'Asus4-shape (upper)', minFret:5, tips:'Sus4 barre higher up. Great for adding tension before resolving to I.' },
+  ],
+  add9: [
+    // Eadd9: E, G#, B, F#. [0,2,2,1,0,2]: E=E, A+2=B✓, D+2=E, G+1=G#✓, B+0=B, e+2=F#✓ ✓
+    { label:'Eadd9-shape', anchor:0, offsets:[0,2,2,1,0,2], fingers:'Eadd9-shape', tips:'Add9 — adds the 9th (2nd up an octave) without replacing any chord tone.' },
+    // Dadd9: D, F#, A, E. [null,null,0,2,3,0]: D=D, G+2=A✓, B+3=D, e+0=E✓(9th) ✓
+    { label:'Dadd9-shape', anchor:2, offsets:[null,null,0,2,3,0], fingers:'Dadd9-shape', tips:'Dadd9 — open high e adds the 9th. Beautiful, shimmering folk voicing.' },
+    // Aadd9: A, C#, E, B. [null,0,2,4,2,0]: A=A, D+2=E✓(5th), G+4=B✓(9th!), B+2=C#✓(maj3), e+0=E ✓
+    { label:'Aadd9-shape', anchor:1, offsets:[null,0,2,4,2,0], fingers:'Aadd9-shape', tips:'Aadd9 — G string plays the 9th. Rich, open voicing perfect for strumming.' },
+  ],
+};
+
+// Compute actual voicings from a shape template for a given root note
+function computeVoicing(shape, rootNote) {
+  const rootIdx = NOTES.indexOf(rootNote);
+  const anchorStr = shape.anchor;
+  // Find root fret on anchor string
+  const minFret = shape.minFret || 0;
+  const rootFret = fretForNote(rootIdx, anchorStr, minFret);
+  
+  // Compute each string's fret
+  const voicing = shape.offsets.map((offset, strIdx) => {
+    if (offset === null) return null;
+    const fret = rootFret + offset;
+    // If fret 0 is specifically wanted (open string) check it matches
+    // For non-anchor open strings in templates, keep as-is offset from root
+    return fret;
+  });
+
+  // baseFret: the lowest non-zero fret played, for diagram positioning
+  const frettedFrets = voicing.filter(f => f !== null && f > 0);
+  const minPlayed = frettedFrets.length ? Math.min(...frettedFrets) : 1;
+  const baseFret = minPlayed <= 1 ? 1 : minPlayed;
+
+  // Build fingering string
+  const fingerStr = voicing.map(f => f === null ? 'x' : f === 0 ? '0' : f).join('-');
+
+  return {
+    label: shape.label,
+    voicing,
+    baseFret,
+    fingers: fingerStr,
+    tips: shape.tips,
+  };
+}
+
+// Get all voicings for a root + quality
+function getVoicings(rootNote, quality) {
+  const shapes = SHAPE_TEMPLATES[quality] || SHAPE_TEMPLATES['major'];
+  return shapes.map(shape => computeVoicing(shape, rootNote));
+}
+
+// Keep a small set of hand-crafted open-position voicings for common chords
+// These override the computed ones for accuracy on well-known open shapes
+const OPEN_OVERRIDES = {
+  'E-major': [
+    { label:'Open E (root pos)', voicing:[0,2,2,1,0,0], baseFret:1, fingers:'022100', tips:'Open E — all 6 strings ring. One of the richest open chords on guitar.' },
+    { label:'Open E 1st inv (G# bass)', voicing:[4,2,2,1,0,0], baseFret:1, fingers:'422100', tips:'G# (major 3rd) in low bass. Chromatic walk E–G#–A is gorgeous.' },
+  ],
+  'A-major': [
+    { label:'Open A (root pos)', voicing:[null,0,2,2,2,0], baseFret:1, fingers:'x02220', tips:'Open A — strum strings 5–1. Bright and clear.' },
+    { label:'A/C# (1st inv)', voicing:[null,4,2,2,2,0], baseFret:1, fingers:'x42220', tips:'C# (major 3rd) on A string at fret 4. Lifts the bass into the major 3rd.' },
+  ],
+  'D-major': [
+    { label:'Open D (root pos)', voicing:[null,null,0,2,3,2], baseFret:1, fingers:'xx0232', tips:'Classic open D. Strum strings 4–1 only.' },
+    { label:'Open D 1st inv (F# bass)', voicing:[null,null,4,2,3,2], baseFret:2, fingers:'xx4232', tips:'F# (major 3rd) in bass on D string. Pastoral, floating quality.' },
+    { label:'Open D/A (2nd inv)', voicing:[null,0,4,2,3,2], baseFret:1, fingers:'x04232', tips:'A (5th) as open bass — airy and stable. Great for folk pedal-tone passages.' },
+  ],
+  'G-major': [
+    { label:'Open G (root pos)', voicing:[3,2,0,0,0,3], baseFret:1, fingers:'320003', tips:'Open G — all 6 strings. Huge, resonant. Use ring/middle/index or pinky barre.' },
+    { label:'Open G/D (2nd inv)', voicing:[null,null,0,0,0,3], baseFret:1, fingers:'xx0003', tips:'D bass (5th) using open D and G strings. Delicate, high-register G voicing.' },
+  ],
+  'C-major': [
+    { label:'Open C (root pos)', voicing:[null,3,2,0,1,0], baseFret:1, fingers:'x32010', tips:'Classic open C. Ring=A(fret3), Middle=D(fret2), Index=B(fret1). Strum 5–1.' },
+    { label:'Open C/E (1st inv)', voicing:[0,3,2,0,1,0], baseFret:1, fingers:'032010', tips:'E (major 3rd) on low E string. Sounds like E/C — bright and airy.' },
+  ],
+  'E-minor': [
+    { label:'Open Em (root pos)', voicing:[0,2,2,0,0,0], baseFret:1, fingers:'022000', tips:'Open Em — all 6 strings. The darkest, most resonant open chord.' },
+    { label:'Open Em (sparse)', voicing:[0,2,2,0,0,null], baseFret:1, fingers:'022000x', tips:'Em without the high e — slightly darker, good for fingerpicked bass-note patterns.' },
+  ],
+  'A-minor': [
+    { label:'Open Am (root pos)', voicing:[null,0,2,2,1,0], baseFret:1, fingers:'x02210', tips:'Classic open Am. Index=B(2), Middle=D(3), Ring=G(3).' },
+    { label:'Open Am/C (1st inv)', voicing:[null,3,2,2,1,0], baseFret:1, fingers:'x32210', tips:'C (minor 3rd) in bass. Very similar fingering to C major — smooth voice leading.' },
+    { label:'Open Am/E (2nd inv)', voicing:[0,0,2,2,1,0], baseFret:1, fingers:'002210', tips:'E (5th) on both low strings. Full and resonant — two open Es anchor the chord.' },
+  ],
+  'D-minor': [
+    { label:'Open Dm (root pos)', voicing:[null,null,0,2,3,1], baseFret:1, fingers:'xx0231', tips:'Classic open Dm. Index=e(fret1), Middle=G(fret2), Ring=B(fret3). Strum 4–1.' },
+    { label:'Open Dm/F (1st inv)', voicing:[1,null,0,2,3,1], baseFret:1, fingers:'1x0231', tips:'F (minor 3rd) on low E. Gives a dark, bass-heavy Dm/F voicing.' },
+    { label:'Open Dm/A (2nd inv)', voicing:[null,0,0,2,3,1], baseFret:1, fingers:'x00231', tips:'A (5th) on open A string. Adds resonance and depth to the Dm.' },
+  ],
+  'B-minor': [
+    { label:'Bm barre (root pos)', voicing:[null,2,4,4,3,2], baseFret:2, fingers:'x24432', tips:'Standard Bm barre at fret 2 (Am shape). Key chord in D major context.' },
+    { label:'Bm/D (1st inv)', voicing:[null,null,0,4,3,2], baseFret:1, fingers:'xx0432', tips:'D (minor 3rd) via open D string in bass. Evocative, suspended quality.' },
+    { label:'Bm/F# (2nd inv)', voicing:[2,2,4,4,3,2], baseFret:2, fingers:'224432', tips:'F# (5th) on low E (fret 2). Em-shape partial — full resonant 2nd inversion.' },
+  ],
+  'F-major': [
+    { label:'F barre (root pos)', voicing:[1,3,3,2,1,1], baseFret:1, fingers:'133211', tips:'Full F barre — E-shape at fret 1. The essential barre chord milestone.' },
+    { label:'F/A (1st inv, partial)', voicing:[null,0,3,2,1,1], baseFret:1, fingers:'x03211', tips:'A (major 3rd) via open A string. Lighter alternative to full barre.' },
+    { label:'F/C (2nd inv, mini)', voicing:[null,null,3,2,1,1], baseFret:1, fingers:'xx3211', tips:'C (5th) in bass. Beginner-friendly 4-string F shape.' },
+  ],
+  'C-minor': [
+    { label:'Cm barre (root pos)', voicing:[null,3,5,5,4,3], baseFret:3, fingers:'x35543', tips:'Cm barre at fret 3 (Am shape). Index barre fret 3, ring/pinky fill in.' },
+    { label:'Cm/Eb (1st inv)', voicing:[null,null,5,5,4,3], baseFret:3, fingers:'xx5543', tips:'Eb (minor 3rd) in bass on D string. Compact, dark 4-string Cm voicing.' },
+    { label:'Cm/G (2nd inv)', voicing:[3,null,5,5,4,3], baseFret:3, fingers:'3x5543', tips:'G (5th) on low E (fret 3). Mute A string — all remaining notes are chord tones.' },
+  ],
+  'G-minor': [
+    { label:'Gm barre (root pos)', voicing:[3,5,5,3,3,3], baseFret:3, fingers:'355333', tips:'Gm barre at fret 3 (Em shape). Dark and full — all 6 strings.' },
+    { label:'Gm/Bb (1st inv)', voicing:[null,1,0,0,3,null], baseFret:1, fingers:'x100 3x', tips:'Bb on A string (fret 1), open D and G, D on B (fret 3). Clean, open Bb-bass inversion.' },
+    { label:'Gm/D (2nd inv)', voicing:[null,null,0,3,3,3], baseFret:1, fingers:'xx0333', tips:'Open D string as bass (5th). G on G fret 3, D on B fret 3, G on e fret 3.' },
+  ],
+};
+
+// Progressions — categories: classic, dark, modal, folk, ab
+const PROGRESSIONS = [
+  // ── CLASSIC ──
+  { id:'I-V-vi-IV', name:'I–V–vi–IV', desc:'The backbone of pop music — four chords, infinite songs', genre:'Pop / Rock', feel:'Uplifting, familiar', degrees:['I','V','vi','IV'], steps:[0,7,9,5], cat:'classic' },
+  { id:'ii-V-I', name:'ii–V–I', desc:'The fundamental jazz cadence — tension and resolution', genre:'Jazz', feel:'Sophisticated, resolving', degrees:['ii','V','I'], steps:[2,7,0], cat:'classic' },
+  { id:'I-IV-V', name:'I–IV–V', desc:'12-bar blues and rock-and-roll DNA', genre:'Blues / Rock', feel:'Raw, driving', degrees:['I','IV','V'], steps:[0,5,7], cat:'classic' },
+  { id:'I-vi-IV-V', name:'I–vi–IV–V', desc:'50s doo-wop — nostalgia baked in', genre:'Oldies / Pop', feel:'Nostalgic, smooth', degrees:['I','vi','IV','V'], steps:[0,9,5,7], cat:'classic' },
+
+  // ── DARK / MYSTERIOUS ──
+  { id:'i-bVII-bVI-bVII', name:'i–♭VII–♭VI–♭VII', desc:'Andalusian cadence — ancient, dramatic, hypnotic. Used by Espers and countless folk-psych artists', genre:'Folk-Psych / Flamenco', feel:'Dramatic, ancient, inevitable', degrees:['i','♭VII','♭VI','♭VII'], steps:[0,10,8,10], minor:true, cat:'dark' },
+  { id:'i-iv-v', name:'i–iv–v (Natural Minor)', desc:'Pure natural minor — no leading tone, no resolution, just darkness', genre:'Gothic Folk / Drone', feel:'Unresolved, haunting, meditative', degrees:['i','iv','v'], steps:[0,5,7], minor:true, cat:'dark' },
+  { id:'i-bVI-bIII-bVII', name:'i–♭VI–♭III–♭VII', desc:'Aeolian mode rotation — sweeping and cinematic. Beloved in dark folk and neo-psych', genre:'Dark Folk / Psych', feel:'Sweeping, melancholic, mysterious', degrees:['i','♭VI','♭III','♭VII'], steps:[0,8,3,10], minor:true, cat:'dark' },
+  { id:'i-v-bVI-bIII', name:'i–v–♭VI–♭III', desc:'Reversed descent — the haunting journey inward', genre:'Psych / Film', feel:'Descending, ominous, dreamlike', degrees:['i','v','♭VI','♭III'], steps:[0,7,8,3], minor:true, cat:'dark' },
+  { id:'i-bII-i', name:'i–♭II–i (Phrygian Vamp)', desc:'Phrygian half-step tension — the sound of ancient mystery and dread', genre:'Flamenco / Metal / Dark Folk', feel:'Tense, ancient, unyielding', degrees:['i','♭II'], steps:[0,1], minor:true, cat:'dark' },
+  { id:'I-III-IV-iv', name:'I–III–IV–iv', desc:'Major to parallel minor iv — "Deceptive" bittersweet turn', genre:'Rock / Film / Folk', feel:'Bittersweet, tense, cinematic', degrees:['I','III','IV','iv'], steps:[0,4,5,5], mixedQ:['major','major','major','minor'], cat:'dark' },
+  { id:'i-VII-i-VII', name:'i–VII–i–VII (Modal Vamp)', desc:'Simple two-chord Aeolian drone — hypnotic and open-ended. Great for improv', genre:'Psych / Drone / Folk', feel:'Hypnotic, open, modal', degrees:['i','♭VII'], steps:[0,10], minor:true, cat:'dark' },
+
+  // ── MODAL ──
+  { id:'dorian-I-IV', name:'i–IV (Dorian)', desc:'Dorian mode — minor with a raised 6th. "So What" (Miles Davis), "Mad World", dark folk', genre:'Jazz / Folk / Rock', feel:'Soulful, bittersweet, spacious', degrees:['i','IV'], steps:[0,5], mixedQ:['minor','major'], cat:'modal' },
+  { id:'dorian-i-II-IV', name:'i–II–IV (Dorian)', desc:'Classic Dorian vamp — the raised 6th in the II chord gives it a bright, modal lift', genre:'Folk-Jazz / Psych', feel:'Open, modal, floating', degrees:['i','♭II→II (Dorian)','IV'], steps:[0,2,5], mixedQ:['minor','major','major'], cat:'modal' },
+  { id:'mixolydian-I-bVII-IV', name:'I–♭VII–IV (Mixolydian)', desc:'Mixolydian mode — major with a flat 7. Rock anthems and British folk', genre:'Folk / Rock / Celtic', feel:'Earthy, modal, powerful', degrees:['I','♭VII','IV'], steps:[0,10,5], cat:'modal' },
+  { id:'phrygian-i-bII-bVII', name:'i–♭II–♭VII (Phrygian)', desc:'Phrygian mode — dark, exotic, Eastern-tinged. Deeply evocative half-step motion', genre:'Flamenco / World / Dark Folk', feel:'Ancient, tense, mysterious', degrees:['i','♭II','♭VII'], steps:[0,1,10], minor:true, cat:'modal' },
+  { id:'lydian-I-II', name:'I–II (Lydian)', desc:'Lydian mode vamp — raised 4th creates an ethereal, floating ambiguity', genre:'Film / Ambient / Folk', feel:'Ethereal, dreamy, floating', degrees:['I','II (Lydian)'], steps:[0,2], cat:'modal' },
+
+  // ── FOLK ──
+  { id:'I-V-I', name:'I–V–I (Cadence)', desc:'The simplest complete statement in folk — tension and release in three chords', genre:'Folk / Traditional', feel:'Resolved, honest, timeless', degrees:['I','V','I'], steps:[0,7,0], cat:'folk' },
+  { id:'I-IV-I-V', name:'I–IV–I–V', desc:'Folk circle — the heart of countless ballads and work songs', genre:'Folk / Americana', feel:'Warm, grounded, storytelling', degrees:['I','IV','I','V'], steps:[0,5,0,7], cat:'folk' },
+  { id:'vi-V-IV-I', name:'vi–V–IV–I', desc:'Descending folk cadence — elegiac and deeply emotional', genre:'Folk / Ballad', feel:'Poignant, descending, emotional', degrees:['vi','V','IV','I'], steps:[9,7,5,0], cat:'folk' },
+  { id:'I-iii-IV-I', name:'I–iii–IV–I', desc:'The iii chord adds wistful colour — common in Celtic and English folk', genre:'Celtic / English Folk', feel:'Wistful, gentle, pastoral', degrees:['I','iii','IV','I'], steps:[0,4,5,0], cat:'folk' },
+  { id:'I-bVII-IV-I', name:'I–♭VII–IV–I (Mixolydian Folk)', desc:'The ♭VII gives a modal, pre-tonal flavour — deeply rooted in British Isles tradition', genre:'British Isles Folk / Folk-Rock', feel:'Ancient, modal, earthy', degrees:['I','♭VII','IV','I'], steps:[0,10,5,0], cat:'folk' },
+
+  // ── A/B FORM ──
+  { id:'ab-I-IV-V-vi', name:'A: I–IV | B: V–vi', desc:'Simple two-part folk form. A section feels settled; B section turns inward', genre:'Folk / Singer-Songwriter', feel:'Grounded A / pensive B', degrees:['I','IV','V','vi'], steps:[0,5,7,9], abLabel:['A','A','B','B'], cat:'ab' },
+  { id:'ab-i-bVII-bVI-V', name:'A: i–♭VII | B: ♭VI–V', desc:'Minor A/B structure — descends from dark to tense resolution. Espers-style dark folk', genre:'Dark Folk / Psych', feel:'Brooding A / resolving B', degrees:['i','♭VII','♭VI','V'], steps:[0,10,8,7], abLabel:['A','A','B','B'], minor:true, cat:'ab' },
+  { id:'ab-I-V-vi-IV', name:'A: I–V | B: vi–IV', desc:'Pop A/B split — use the major pair for verses, the minor pair for a melancholic bridge', genre:'Pop / Folk', feel:'Bright A / melancholic B', degrees:['I','V','vi','IV'], steps:[0,7,9,5], abLabel:['A','A','B','B'], cat:'ab' },
+  { id:'ab-dorian-vamp', name:'A: i (drone) | B: i–IV', desc:'A-section: single chord modal drone. B-section: Dorian lift to IV. Espers / Sandy Denny style', genre:'Folk-Psych / Modal', feel:'Meditative A / opening B', degrees:['i','i','i–IV','IV'], steps:[0,0,0,5], mixedQ:['minor','minor','minor','major'], abLabel:['A','A','B','B'], cat:'ab' },
+];
+
+let currentMode = 'inversions';
+let currentRoot = 'C';
+let currentQuality = 'major';
+let currentProgId = 'i-bVII-bVI-bVII';
+let selectedCardIndex = 0;
+let currentCategory = 'all';
+let progPosition = 'open'; // 'open' or 'upper'
+
+// Get voicings for a given root + quality, merging open overrides with computed shapes
+function getVoicingsForChord(root, quality) {
+  const key = `${root}-${quality}`;
+  const overrides = OPEN_OVERRIDES[key] || [];
+  const computed = getVoicings(root, quality);
+  // Deduplicate: if override covers same label pattern, prefer override
+  // Return overrides first (open positions), then computed upper positions
+  const upperComputed = computed.filter(v => v.baseFret >= 5);
+  return [...overrides, ...upperComputed];
+}
+
+// ─── FRETBOARD DIAGRAM ─────────────────────────────────────────────────────
+
+function buildFretboardSVG(voicing, baseFret) {
+  const STRINGS_COUNT = 6;
+  const FRETS_SHOWN = 5;
+  // Real guitar proportions: string spacing ~14mm, fret spacing ~18mm
+  // Make diagram wider and shorter: W > H so frets are taller than string gaps are wide
+  const W = 140, H = 130;
+  const left = 24, top = 24, right = W - 16, bottom = H - 14;
+  const strW = (right - left) / (STRINGS_COUNT - 1);   // ~20px between strings
+  const fretH = (bottom - top) / FRETS_SHOWN;           // ~18px between frets
+
+  let svg = `<svg class="diagram" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+
+  // Nut
+  if (baseFret === 1) {
+    svg += `<line x1="${left}" y1="${top}" x2="${right}" y2="${top}" stroke="#c9a84c" stroke-width="3.5"/>`;
+  } else {
+    svg += `<text x="${left - 5}" y="${top + fretH * 0.5 + 4}" fill="#8a7e6e" font-size="8" font-family="DM Mono, monospace" text-anchor="end">${baseFret}</text>`;
+    svg += `<line x1="${left}" y1="${top}" x2="${right}" y2="${top}" stroke="#3a3228" stroke-width="1"/>`;
+  }
+
+  // Fret lines
+  for (let f = 0; f <= FRETS_SHOWN; f++) {
+    const y = top + f * fretH;
+    svg += `<line x1="${left}" y1="${y}" x2="${right}" y2="${y}" stroke="#2e2820" stroke-width="1"/>`;
+  }
+
+  // String lines — varying thickness low E to high e
+  const stringWeights = [1.8, 1.5, 1.2, 1.0, 0.85, 0.7];
+  for (let s = 0; s < STRINGS_COUNT; s++) {
+    const x = left + s * strW;
+    svg += `<line x1="${x}" y1="${top}" x2="${x}" y2="${bottom}" stroke="#4a4035" stroke-width="${stringWeights[s]}"/>`;
+  }
+
+  // Dots & mutes
+  const dotR = Math.min(strW * 0.38, fretH * 0.38); // dot fits inside the cell
+  for (let s = 0; s < STRINGS_COUNT; s++) {
+    const x = left + s * strW;
+    const fret = voicing[s];
+
+    if (fret === null) {
+      svg += `<text x="${x}" y="${top - 7}" fill="#8a3a2a" font-size="9" text-anchor="middle" font-family="DM Mono">×</text>`;
+    } else if (fret === 0) {
+      svg += `<circle cx="${x}" cy="${top - 8}" r="4.5" fill="none" stroke="#c9a84c" stroke-width="1.4"/>`;
+    } else {
+      const relFret = fret - baseFret + 1;
+      if (relFret >= 1 && relFret <= FRETS_SHOWN) {
+        const cy = top + (relFret - 0.5) * fretH;
+        svg += `<circle cx="${x}" cy="${cy}" r="${dotR}" fill="#c9a84c"/>`;
+      }
+    }
+  }
+
+  // Barre detection
+  const frettedNotes = voicing.filter(v => v !== null && v !== 0);
+  if (frettedNotes.length >= 4) {
+    const minFret = Math.min(...frettedNotes);
+    const barreStrings = voicing.map((v, i) => ({ v, i })).filter(o => o.v === minFret);
+    if (barreStrings.length >= 4) {
+      const relFret = minFret - baseFret + 1;
+      const cy = top + (relFret - 0.5) * fretH;
+      const x1 = left + barreStrings[0].i * strW;
+      const x2 = left + barreStrings[barreStrings.length - 1].i * strW;
+      svg += `<rect x="${x1 - dotR}" y="${cy - dotR}" width="${x2 - x1 + dotR*2}" height="${dotR*2}" rx="${dotR}" fill="#c9a84c" opacity="0.85"/>`;
+    }
+  }
+
+  svg += '</svg>';
+  return svg;
+}
+
+// ─── INVERSIONS ────────────────────────────────────────────────────────────
+
+function setQuality(btn, q) {
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  currentQuality = q;
+  selectedCardIndex = 0;
+  renderInversions();
+}
+
+function renderInversions() {
+  currentRoot = document.getElementById('rootSelect').value;
+  const q = QUALITIES[currentQuality];
+  document.getElementById('chordTitle').textContent = `${currentRoot} ${q.name}`;
+  document.getElementById('chordSubtitle').textContent = `All inversions & voicings across the fretboard`;
+
+  const voicings = getVoicingsForChord(currentRoot, currentQuality);
+
+  const grid = document.getElementById('chordGrid');
+  grid.innerHTML = '';
+
+  voicings.forEach((v, i) => {
+    const card = document.createElement('div');
+    card.className = `chord-card${i === selectedCardIndex ? ' selected' : ''}`;
+    card.innerHTML = `
+      <div class="card-label">${currentRoot}${q.sym}</div>
+      <div class="card-type">${v.label}</div>
+      <div class="fretboard-wrap">
+        <div class="fret-position">${v.baseFret <= 1 ? 'Open' : `Pos. ${v.baseFret}`}</div>
+        ${buildFretboardSVG(v.voicing, v.baseFret)}
+      </div>
+    `;
+    card.onclick = () => { selectedCardIndex = i; showDetail(v, currentRoot, q); renderInversions(); };
+    grid.appendChild(card);
+  });
+
+  if (voicings[selectedCardIndex]) {
+    showDetail(voicings[selectedCardIndex], currentRoot, q);
+  }
+}
+
+function showDetail(v, root, q) {
+  const panel = document.getElementById('detailPanel');
+  panel.innerHTML = `
+    <div class="detail-panel">
+      <div class="detail-title">${root}${q.sym} — ${v.label}</div>
+      <div class="detail-meta">
+        <div class="meta-item">
+          <span class="meta-label">Fingering</span>
+          <span class="meta-value">${v.fingers}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Position</span>
+          <span class="meta-value">${v.baseFret === 1 ? 'Open / 1st' : `Fret ${v.baseFret}`}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Chord Tones</span>
+          <span class="meta-value">${q.intervals.map(i => NOTES[(NOTES.indexOf(root)+i)%12]).join(' – ')}</span>
+        </div>
+      </div>
+      <div class="tips-box">
+        <strong>Playing Tip:</strong> ${v.tips}
+      </div>
+    </div>
+  `;
+}
+
+// ─── PROGRESSIONS ──────────────────────────────────────────────────────────
+
+function setProgPosition(pos, btn) {
+  progPosition = pos;
+  document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProgression();
+}
+
+function setCategory(btn, cat) {
+  currentCategory = cat;
+  document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const visible = PROGRESSIONS.filter(p => cat === 'all' || p.cat === cat);
+  if (visible.length && !visible.find(p => p.id === currentProgId)) {
+    currentProgId = visible[0].id;
+  }
+  buildProgList();
+  renderProgression();
+}
+
+const CAT_TAG_CLASS = { dark:'tag-dark', folk:'tag-folk', modal:'tag-modal', classic:'tag-classic', ab:'tag-ab' };
+const CAT_TAG_LABEL = { dark:'Dark', folk:'Folk', modal:'Modal', classic:'Classic', ab:'A/B Form' };
+
+function buildProgList() {
+  const list = document.getElementById('progList');
+  list.innerHTML = '';
+  const visible = PROGRESSIONS.filter(p => currentCategory === 'all' || p.cat === currentCategory);
+  visible.forEach(p => {
+    const item = document.createElement('div');
+    item.className = `prog-item${p.id === currentProgId ? ' active' : ''}`;
+    item.innerHTML = `<div class="prog-name">${p.name}</div>
+      <div class="prog-chords">${p.genre}</div>
+      <span class="prog-tag ${CAT_TAG_CLASS[p.cat]}">${CAT_TAG_LABEL[p.cat]}</span>`;
+    item.onclick = () => { currentProgId = p.id; buildProgList(); renderProgression(); };
+    list.appendChild(item);
+  });
+}
+
+function renderProgression() {
+  const key = document.getElementById('progKeySelect').value;
+  const prog = PROGRESSIONS.find(p => p.id === currentProgId);
+  if (!prog) return;
+
+  const keyIdx = NOTES.indexOf(key);
+  document.getElementById('progTitle').textContent = prog.name;
+  document.getElementById('progDesc').textContent = `${prog.desc} — ${prog.feel}`;
+
+  // Build chord list
+  const chords = prog.steps.map((s, i) => {
+    const noteIdx = (keyIdx + s) % 12;
+    const q = prog.mixedQ ? prog.mixedQ[i] : (prog.minor ? 'minor' : (
+      ['ii','vi','iii'].includes((prog.degrees||[])[i]) ? 'minor' : 'major'
+    ));
+    const sym = q === 'minor' ? 'm' : '';
+    return {
+      name: NOTES[noteIdx] + sym,
+      root: NOTES[noteIdx],
+      quality: q,
+      degree: (prog.degrees||[])[i] || '',
+      abLabel: prog.abLabel ? prog.abLabel[i] : null
+    };
+  });
+
+  // Sequence display
+  const seqWrap = document.getElementById('progSequenceWrap');
+  let prevAB = null;
+  seqWrap.innerHTML = `<div class="prog-sequence">` +
+    chords.map((c, i) => {
+      let abBadge = '';
+      if (c.abLabel && c.abLabel !== prevAB) {
+        abBadge = `<div style="font-size:0.6rem;letter-spacing:0.15em;color:var(--amber);margin-bottom:0.3rem">SECTION ${c.abLabel}</div>`;
+        prevAB = c.abLabel;
+      }
+      return `<div class="prog-chord-card">
+        ${abBadge}
+        <div class="prog-degree">${c.degree}</div>
+        <div class="prog-chord-name">${c.name}</div>
+      </div>${i < chords.length - 1 ? '<div class="prog-arrow">→</div>' : ''}`;
+    }).join('') +
+    `</div>
+    <div class="tips-box" style="max-width:100%;margin-bottom:1.5rem">
+      <strong>About this progression:</strong> ${prog.desc}. Genre: <em>${prog.genre}</em>. Feel: <em>${prog.feel}</em>.<br>
+      In the key of <strong>${key}</strong>: ${chords.map(c => c.name).join(' → ')}.
+    </div>`;
+
+  // Smart voicing selection for progressions:
+  // 1. Gather ALL available voicings for every chord in the progression
+  // 2. For "open" mode: prefer voicings with baseFret <= 4; pick lowest position
+  // 3. For "upper" mode: find the median fret across all chords' best voicings,
+  //    then for each chord pick the voicing whose baseFret is closest to that median,
+  //    so the whole progression stays in a coherent fret zone.
+
+  function getBestVoicingForMode(root, quality, mode, targetFret) {
+    const all = getVoicingsForChord(root, quality);
+    if (mode === 'open') {
+      // Prefer open/low position voicings (baseFret <= 4)
+      const low = all.filter(v => v.baseFret <= 4);
+      return low.length ? low[0] : all[0];
+    } else {
+      // Upper: pick voicing whose baseFret is closest to targetFret
+      // but must be >= 4 (not open position)
+      const upper = all.filter(v => v.baseFret >= 4);
+      const pool = upper.length ? upper : all;
+      return pool.reduce((best, v) =>
+        Math.abs(v.baseFret - targetFret) < Math.abs(best.baseFret - targetFret) ? v : best
+      , pool[0]);
+    }
+  }
+
+  // For upper mode: compute target fret as median of each chord's lowest barre position
+  let targetFret = 5;
+  if (progPosition === 'upper') {
+    const barrePositions = chords.map(c => {
+      const all = getVoicingsForChord(c.root, c.quality);
+      const upper = all.filter(v => v.baseFret >= 4);
+      return upper.length ? upper[0].baseFret : 5;
+    }).sort((a,b) => a-b);
+    // Use median to avoid outliers pulling everything to fret 10+
+    targetFret = barrePositions[Math.floor(barrePositions.length / 2)];
+  }
+
+  // Get voicings filtered by position preference
+  const diagWrap = document.getElementById('progDiagramsWrap');
+  diagWrap.innerHTML = `<div class="sidebar-label" style="margin-bottom:1rem">Chord Voicings — ${progPosition === 'open' ? 'Open / 1st Position' : `Upper Neck (around fret ${targetFret})`}</div><div class="prog-detail-grid">` +
+    chords.map(c => {
+      const v = getBestVoicingForMode(c.root, c.quality, progPosition, targetFret);
+      if (!v) return `<div class="prog-chord-card"><div class="prog-chord-name">${c.name}</div></div>`;
+      return `<div class="chord-card">
+          <div class="card-label">${c.name}</div>
+          <div class="card-type">${c.degree} — ${v.label}</div>
+          <div class="fretboard-wrap">
+            <div class="fret-position">${v.baseFret <= 1 ? 'Open' : `Pos. ${v.baseFret}`}</div>
+            ${buildFretboardSVG(v.voicing, v.baseFret)}
+          </div>
+        </div>`;
+    }).join('') + '</div>';
+}
+
+// ─── MODE SWITCH ───────────────────────────────────────────────────────────
+
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && mode === 'inversions') || (i === 1 && mode === 'progressions'));
+  });
+  document.getElementById('inversionView').classList.toggle('hidden', mode !== 'inversions');
+  document.getElementById('progressionView').classList.toggle('visible', mode === 'progressions');
+  document.getElementById('inv-sidebar').style.display = mode === 'inversions' ? 'block' : 'none';
+  document.getElementById('prog-sidebar').style.display = mode === 'progressions' ? 'block' : 'none';
+  if (mode === 'progressions') renderProgression();
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+
+buildProgList();
+renderInversions();
+</script>
+</body>
+</html>
