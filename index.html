@@ -81,7 +81,7 @@
     border: none;
     color: var(--muted);
     font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     cursor: pointer;
@@ -127,7 +127,7 @@
   }
 
   .control-label {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--gold);
@@ -139,7 +139,7 @@
     border: 1px solid var(--border);
     color: var(--cream);
     font-family: 'DM Mono', monospace;
-    font-size: 0.9rem;
+    font-size: 1rem;
     padding: 0.55rem 0.75rem;
     cursor: pointer;
     appearance: none;
@@ -158,7 +158,7 @@
     border: 1px solid var(--border);
     color: var(--muted);
     font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
+    font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.15s;
     background: transparent;
@@ -178,7 +178,7 @@
   .chord-subtitle {
     font-family: 'Crimson Pro', serif;
     font-style: italic;
-    font-size: 1rem;
+    font-size: 1.1rem;
     color: var(--muted);
     margin-bottom: 1.25rem;
   }
@@ -208,17 +208,21 @@
     transition: transform 0.25s;
   }
   .chord-card:active { border-color: var(--gold); }
-  .chord-card.selected { border-color: var(--gold); background: rgba(201,168,76,0.06); }
+  .chord-card.selected {
+    border-color: var(--gold);
+    background: rgba(201,168,76,0.06);
+    box-shadow: 0 3px 0 0 var(--gold);
+  }
   .chord-card.selected::before { transform: scaleX(1); }
 
   .card-label {
     font-family: 'Playfair Display', serif;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     color: var(--gold-light);
     margin-bottom: 0.2rem;
   }
   .card-type {
-    font-size: 0.65rem;
+    font-size: 0.78rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--muted);
@@ -226,7 +230,7 @@
   }
   .fretboard-wrap { margin-top: 0.4rem; }
   .fret-position {
-    font-size: 0.65rem;
+    font-size: 0.78rem;
     color: var(--muted);
     margin-bottom: 0.25rem;
     letter-spacing: 0.05em;
@@ -235,10 +239,31 @@
 
   /* Detail panel */
   .detail-panel {
-    margin-top: 2rem;
-    border-top: 1px solid var(--border);
-    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    border: 1px solid var(--gold);
+    border-top: 3px solid var(--gold);
+    padding: 1.25rem 1.25rem 1.25rem;
+    background: rgba(201,168,76,0.04);
     animation: fadeIn 0.3s ease;
+    position: relative;
+  }
+  /* Arrow pointing up toward the selected card */
+  .detail-panel::before {
+    content: '';
+    position: absolute;
+    top: -9px;
+    left: 1.5rem;
+    width: 0; height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid var(--gold);
+  }
+  .detail-panel-eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
   }
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
@@ -258,14 +283,14 @@
   }
   .meta-item { display: flex; flex-direction: column; gap: 0.15rem; }
   .meta-label {
-    font-size: 0.65rem;
+    font-size: 0.78rem;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--muted);
   }
   .meta-value {
     font-family: 'Crimson Pro', serif;
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     color: var(--cream);
   }
   .tips-box {
@@ -273,7 +298,7 @@
     border-left: 3px solid var(--gold);
     padding: 1rem 1.1rem;
     font-family: 'Crimson Pro', serif;
-    font-size: 1rem;
+    font-size: 1.1rem;
     color: var(--cream);
     line-height: 1.7;
   }
@@ -296,7 +321,7 @@
   .prog-desc {
     font-family: 'Crimson Pro', serif;
     font-style: italic;
-    font-size: 1rem;
+    font-size: 1.1rem;
     color: var(--muted);
     margin-bottom: 1.25rem;
   }
@@ -317,11 +342,11 @@
   }
   .prog-chord-name {
     font-family: 'Playfair Display', serif;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     color: var(--gold-light);
   }
   .prog-degree {
-    font-size: 0.62rem;
+    font-size: 0.78rem;
     color: var(--muted);
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -329,7 +354,7 @@
   }
   .prog-arrow { color: var(--muted); font-size: 1.1rem; }
 
-  .tips-box.prog-tip { max-width: 100%; margin-bottom: 1.25rem; font-size: 0.95rem; }
+  .tips-box.prog-tip { max-width: 100%; margin-bottom: 1.25rem; font-size: 1.05rem; }
 
   /* Position toggle */
   .pos-toggle-row {
@@ -340,7 +365,7 @@
     flex-wrap: wrap;
   }
   .pos-toggle-label {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--muted);
@@ -352,7 +377,7 @@
     border: 1px solid var(--border);
     color: var(--muted);
     font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
+    font-size: 0.85rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     cursor: pointer;
@@ -361,7 +386,7 @@
   .pos-btn.active { background: var(--gold); border-color: var(--gold); color: var(--bg); }
 
   .prog-diag-section-label {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--gold);
@@ -375,7 +400,7 @@
 
   /* Category tags */
   .prog-item .prog-tag {
-    font-size: 0.62rem;
+    font-size: 0.75rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     padding: 0.15rem 0.4rem;
@@ -452,7 +477,7 @@
     overflow: hidden;
   }
   .drawer-current-prog {
-    font-size: 0.78rem;
+    font-size: 0.88rem;
     color: var(--gold-light);
     white-space: nowrap;
     overflow: hidden;
@@ -460,7 +485,7 @@
     max-width: 220px;
   }
   .drawer-hint {
-    font-size: 0.62rem;
+    font-size: 0.75rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--muted);
@@ -491,7 +516,7 @@
 
   /* Key selector inside drawer */
   .drawer-section-label {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--gold);
@@ -511,7 +536,7 @@
     border: 1px solid var(--border);
     color: var(--muted);
     font-family: 'DM Mono', monospace;
-    font-size: 0.78rem;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.15s;
   }
@@ -529,7 +554,7 @@
     border: 1px solid var(--border);
     color: var(--muted);
     font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
+    font-size: 0.82rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     cursor: pointer;
@@ -556,12 +581,12 @@
   .prog-item:active { border-color: var(--gold); }
   .prog-item.active { border-color: var(--gold); background: rgba(201,168,76,0.08); }
   .prog-name {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     color: var(--gold-light);
     margin-bottom: 0.2rem;
   }
   .prog-chords {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     color: var(--muted);
     font-style: italic;
     font-family: 'Crimson Pro', serif;
@@ -592,7 +617,7 @@
       position: relative;
     }
     .logo { font-size: 2rem; }
-    .mode-tab { font-size: 0.7rem; padding: 0.55rem 1.1rem; }
+    .mode-tab { font-size: 0.8rem; padding: 0.55rem 1.1rem; }
 
     #app-main {
       position: static;
@@ -1118,8 +1143,8 @@ function buildFretboardSVG(voicing, baseFret) {
   const FRETS_SHOWN = 5;
   // Real guitar proportions: string spacing ~14mm, fret spacing ~18mm
   // Make diagram wider and shorter: W > H so frets are taller than string gaps are wide
-  const W = 140, H = 130;
-  const left = 24, top = 24, right = W - 16, bottom = H - 14;
+  const W = 148, H = 130;
+  const left = 34, top = 24, right = W - 14, bottom = H - 14;
   const strW = (right - left) / (STRINGS_COUNT - 1);   // ~20px between strings
   const fretH = (bottom - top) / FRETS_SHOWN;           // ~18px between frets
 
@@ -1129,7 +1154,8 @@ function buildFretboardSVG(voicing, baseFret) {
   if (baseFret === 1) {
     svg += `<line x1="${left}" y1="${top}" x2="${right}" y2="${top}" stroke="#c9a84c" stroke-width="3.5"/>`;
   } else {
-    svg += `<text x="${left - 5}" y="${top + fretH * 0.5 + 4}" fill="#8a7e6e" font-size="8" font-family="DM Mono, monospace" text-anchor="end">${baseFret}</text>`;
+    // Position number: right-aligned, comfortably left of the first string with room to spare
+    svg += `<text x="${left - 8}" y="${top + fretH * 0.5 + 4}" fill="#a09070" font-size="12" font-weight="500" font-family="DM Mono, monospace" text-anchor="end">${baseFret}</text>`;
     svg += `<line x1="${left}" y1="${top}" x2="${right}" y2="${top}" stroke="#3a3228" stroke-width="1"/>`;
   }
 
@@ -1146,17 +1172,42 @@ function buildFretboardSVG(voicing, baseFret) {
     svg += `<line x1="${x}" y1="${top}" x2="${x}" y2="${bottom}" stroke="#4a4035" stroke-width="${stringWeights[s]}"/>`;
   }
 
-  // Dots & mutes
-  const dotR = Math.min(strW * 0.38, fretH * 0.38); // dot fits inside the cell
+  // Barre detection — a barre exists when the minimum fret spans 3+ strings
+  // anchored on string 0 or 1, OR spans 4+ strings regardless, OR 4+ strings share it.
+  // This correctly handles E-shape (strings 0-5) and A-shape (strings 1-5) barres
+  // even when middle strings have additional fingers at higher frets.
+  const frettedPairs = voicing.map((v, i) => ({ v, i })).filter(o => o.v !== null && o.v > 0);
+  let barreFromStr = -1, barreToStr = -1, barreFret = -1;
+
+  if (frettedPairs.length >= 2) {
+    const minFret = Math.min(...frettedPairs.map(o => o.v));
+    const atMin = frettedPairs.filter(o => o.v === minFret);
+    if (atMin.length >= 1) {
+      const loStr = Math.min(...atMin.map(o => o.i));
+      const hiStr = Math.max(...atMin.map(o => o.i));
+      const span  = hiStr - loStr;
+      const lowAnchored = loStr <= 1; // index on low E or A string
+      if (atMin.length >= 4 || span >= 4 || (span >= 3 && lowAnchored)) {
+        barreFromStr = loStr;
+        barreToStr   = hiStr;
+        barreFret    = minFret;
+      }
+    }
+  }
+
+  // Dots & mutes — skip individual dots on strings covered by the barre
+  const dotR = Math.min(strW * 0.38, fretH * 0.38);
   for (let s = 0; s < STRINGS_COUNT; s++) {
-    const x = left + s * strW;
+    const x    = left + s * strW;
     const fret = voicing[s];
+    const onBarre = barreFret > 0 && fret === barreFret && s >= barreFromStr && s <= barreToStr;
 
     if (fret === null) {
-      svg += `<text x="${x}" y="${top - 7}" fill="#8a3a2a" font-size="9" text-anchor="middle" font-family="DM Mono">×</text>`;
+      svg += `<text x="${x}" y="${top - 7}" fill="#8a3a2a" font-size="11" text-anchor="middle" font-family="DM Mono">×</text>`;
     } else if (fret === 0) {
       svg += `<circle cx="${x}" cy="${top - 8}" r="4.5" fill="none" stroke="#c9a84c" stroke-width="1.4"/>`;
-    } else {
+    } else if (!onBarre) {
+      // Only draw individual dot if this string is NOT part of the barre
       const relFret = fret - baseFret + 1;
       if (relFret >= 1 && relFret <= FRETS_SHOWN) {
         const cy = top + (relFret - 0.5) * fretH;
@@ -1165,17 +1216,14 @@ function buildFretboardSVG(voicing, baseFret) {
     }
   }
 
-  // Barre detection
-  const frettedNotes = voicing.filter(v => v !== null && v !== 0);
-  if (frettedNotes.length >= 4) {
-    const minFret = Math.min(...frettedNotes);
-    const barreStrings = voicing.map((v, i) => ({ v, i })).filter(o => o.v === minFret);
-    if (barreStrings.length >= 4) {
-      const relFret = minFret - baseFret + 1;
+  // Draw barre bar (fully opaque, drawn after dots so it's clearly on top)
+  if (barreFret > 0) {
+    const relFret = barreFret - baseFret + 1;
+    if (relFret >= 1 && relFret <= FRETS_SHOWN) {
       const cy = top + (relFret - 0.5) * fretH;
-      const x1 = left + barreStrings[0].i * strW;
-      const x2 = left + barreStrings[barreStrings.length - 1].i * strW;
-      svg += `<rect x="${x1 - dotR}" y="${cy - dotR}" width="${x2 - x1 + dotR*2}" height="${dotR*2}" rx="${dotR}" fill="#c9a84c" opacity="0.85"/>`;
+      const x1 = left + barreFromStr * strW;
+      const x2 = left + barreToStr   * strW;
+      svg += `<rect x="${x1 - dotR}" y="${cy - dotR}" width="${x2 - x1 + dotR*2}" height="${dotR*2}" rx="${dotR}" fill="#c9a84c"/>`;
     }
   }
 
@@ -1238,6 +1286,7 @@ function showDetail(v, root, q) {
   const panel = document.getElementById('detailPanel');
   panel.innerHTML = `
     <div class="detail-panel">
+      <div class="detail-panel-eyebrow">Selected voicing</div>
       <div class="detail-title">${root}${q.sym} — ${v.label}</div>
       <div class="detail-meta">
         <div class="meta-item">
@@ -1353,7 +1402,7 @@ function renderProgression() {
     chords.map((c, i) => {
       let abBadge = '';
       if (c.abLabel && c.abLabel !== prevAB) {
-        abBadge = `<div style="font-size:0.6rem;letter-spacing:0.15em;color:var(--amber);margin-bottom:0.3rem">SECTION ${c.abLabel}</div>`;
+        abBadge = `<div style="font-size:0.75rem;letter-spacing:0.15em;color:var(--amber);margin-bottom:0.3rem">SECTION ${c.abLabel}</div>`;
         prevAB = c.abLabel;
       }
       return `<div class="prog-chord-card">
