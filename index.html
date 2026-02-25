@@ -75,10 +75,13 @@
   }
   .nav-dropdown.open .nav-menu { display: block; }
   .nav-menu-section {
-    padding: 0.3rem 0.75rem 0.15rem;
-    font-size: 0.6rem; letter-spacing:0.15em; text-transform:uppercase;
-    color:var(--muted); border-bottom:1px solid var(--border);
+    padding: 0.5rem 0.85rem 0.3rem;
+    font-size: 0.62rem; letter-spacing:0.18em; text-transform:uppercase;
+    color: var(--gold); font-weight: 700;
+    border-bottom: 1px solid var(--border);
+    margin-top: 0.15rem;
   }
+  .nav-menu-section:first-child { margin-top: 0; }
   .nav-menu-item {
     display: block; width: 100%; padding: 0.6rem 0.85rem;
     background: transparent; border: none; border-bottom: 1px solid var(--border);
@@ -1465,11 +1468,12 @@ let neoSelectedId  = null;
 function buildFretboardSVG(voicing, baseFret) {
   const SC = 6, FR = 5;
   const W = 148, H = 130;
-  const left = 26, top = 24, right = W - 10, bottom = H - 14;
+  const left = 26, top = 24, right = W - 16, bottom = H - 14;
   const strW = (right - left) / (SC - 1);
   const fretH = (bottom - top) / FR;
 
-  let svg = `<svg class="diagram" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  // width="100%" + viewBox scales to container; max-width caps at natural size on desktop
+  let svg = `<svg class="diagram" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;max-width:${W}px">`;
 
   if (baseFret === 1) {
     svg += `<line x1="${left}" y1="${top}" x2="${right}" y2="${top}" stroke="#c9a84c" stroke-width="3.5"/>`;
