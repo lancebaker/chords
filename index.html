@@ -38,33 +38,123 @@
   .logo { font-family:'Playfair Display',serif; font-size:1.5rem; font-weight:900; color:var(--gold); letter-spacing:-0.02em; white-space:nowrap; }
   .logo span { color:var(--cream); font-weight:400; font-style:italic; }
 
-  /* Tab bar in header */
-  .tab-bar {
-    display: flex;
-    gap: 0;
-    border: 1px solid var(--border);
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefox */
-    flex-shrink: 1;
-    min-width: 0;
+  /* ── HEADER NAV — two visible controls + dropdown ── */
+  .nav-wrap {
+    display: flex; align-items: center; gap: 0.5rem; flex-shrink: 1; min-width: 0;
   }
-  .tab-bar::-webkit-scrollbar { display: none; } /* Chrome/Safari */
-  .tab-btn {
-    padding: 0.45rem 0.85rem;
-    background: transparent; border: none; border-left: 1px solid var(--border);
+
+  /* Primary visible buttons */
+  .nav-btn {
+    padding: 0.45rem 0.85rem; border: 1px solid var(--border);
+    background: transparent; color: var(--muted);
+    font-family:'DM Mono',monospace; font-size:0.72rem;
+    letter-spacing:0.08em; text-transform:uppercase;
+    cursor:pointer; transition:all 0.2s; white-space:nowrap;
+  }
+  .nav-btn:hover { border-color:var(--gold); color:var(--gold-light); }
+  .nav-btn.active { background:var(--gold); border-color:var(--gold); color:var(--bg); }
+  .nav-btn.active-amber { background:var(--amber); border-color:var(--amber); color:var(--bg); }
+  .nav-btn.active-jazz  { background:var(--tab-jazz); border-color:var(--tab-jazz); color:#fff; }
+  .nav-btn.active-neo   { background:var(--tab-neo);  border-color:var(--tab-neo);  color:#fff; }
+
+  /* Dropdown menu */
+  .nav-dropdown { position: relative; }
+  .nav-dropdown-btn {
+    padding: 0.45rem 0.85rem; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--cream);
+    font-family:'DM Mono',monospace; font-size:0.72rem;
+    letter-spacing:0.08em; text-transform:uppercase;
+    cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:0.4rem;
+  }
+  .nav-dropdown-btn .chevron { font-size:0.6rem; transition:transform 0.2s; }
+  .nav-dropdown.open .nav-dropdown-btn .chevron { transform:rotate(180deg); }
+  .nav-menu {
+    position: absolute; top: calc(100% + 4px); left: 0; min-width: 200px;
+    background: var(--surface); border: 1px solid var(--border);
+    z-index: 300; display: none; animation: fadeIn 0.15s ease;
+  }
+  .nav-dropdown.open .nav-menu { display: block; }
+  .nav-menu-section {
+    padding: 0.3rem 0.75rem 0.15rem;
+    font-size: 0.6rem; letter-spacing:0.15em; text-transform:uppercase;
+    color:var(--muted); border-bottom:1px solid var(--border);
+  }
+  .nav-menu-item {
+    display: block; width: 100%; padding: 0.6rem 0.85rem;
+    background: transparent; border: none; border-bottom: 1px solid var(--border);
     color: var(--muted); font-family:'DM Mono',monospace; font-size:0.72rem;
-    letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:all 0.2s;
-    white-space: nowrap;
+    letter-spacing:0.06em; text-transform:uppercase; cursor:pointer;
+    text-align:left; transition:all 0.15s;
   }
-  .tab-btn:first-child { border-left: none; }
-  .tab-btn.active-chords    { background: var(--gold);          color: var(--bg); }
-  .tab-btn.active-progs     { background: var(--amber);         color: var(--bg); }
-  .tab-btn.active-jazz      { background: var(--tab-jazz);      color: #fff; }
-  .tab-btn.active-jazzprogs { background: var(--tab-jazz-progs);color: #fff; }
-  .tab-btn.active-neosoul   { background: var(--tab-neo);       color: #fff; }
-  .tab-btn.active-neoprogs  { background: var(--tab-neo-progs); color: #fff; }
+  .nav-menu-item:last-child { border-bottom: none; }
+  .nav-menu-item:hover, .nav-menu-item.active { background:rgba(201,168,76,0.08); color:var(--gold-light); }
+  .nav-menu-item.active { color:var(--gold); }
+
+  /* Guide / Help button */
+  .nav-guide-btn {
+    padding: 0.45rem 0.75rem; border: 1px solid var(--border);
+    background: transparent; color: var(--muted);
+    font-family:'DM Mono',monospace; font-size:0.72rem;
+    letter-spacing:0.08em; cursor:pointer; transition:all 0.2s; white-space:nowrap;
+  }
+  .nav-guide-btn:hover { border-color:var(--gold); color:var(--gold-light); }
+  .nav-guide-btn.active { background:var(--surface2); border-color:var(--gold); color:var(--gold); }
+
+  /* Help modal overlay */
+  .help-overlay {
+    position:fixed; inset:0; z-index:400;
+    background:rgba(0,0,0,0.7); display:none; align-items:flex-start; justify-content:center;
+    padding: max(64px, env(safe-area-inset-top)) 1rem 1rem;
+    overflow-y:auto;
+  }
+  .help-overlay.open { display:flex; }
+  .help-modal {
+    background:var(--surface); border:1px solid var(--border); border-top:3px solid var(--gold);
+    width:100%; max-width:600px; padding:1.5rem; animation:fadeIn 0.2s ease; position:relative;
+  }
+  .help-close {
+    position:absolute; top:0.75rem; right:0.75rem;
+    background:none; border:none; color:var(--muted); font-size:1.2rem; cursor:pointer; padding:0.2rem 0.5rem;
+  }
+  .help-close:hover { color:var(--cream); }
+  .help-title { font-family:'Playfair Display',serif; font-size:1.6rem; color:var(--gold); margin-bottom:0.25rem; }
+  .help-sub   { font-family:'Crimson Pro',serif; font-style:italic; font-size:0.95rem; color:var(--muted); margin-bottom:1.25rem; }
+  .help-section-title {
+    font-size:0.72rem; letter-spacing:0.15em; text-transform:uppercase;
+    color:var(--gold); margin:1rem 0 0.4rem; border-bottom:1px solid var(--border); padding-bottom:0.3rem;
+  }
+  .help-item { display:flex; gap:0.75rem; margin-bottom:0.6rem; align-items:flex-start; }
+  .help-icon { font-size:1rem; flex-shrink:0; width:1.5rem; text-align:center; padding-top:0.05rem; }
+  .help-text { font-family:'Crimson Pro',serif; font-size:0.95rem; color:var(--cream); line-height:1.5; }
+  .help-text strong { color:var(--gold-light); }
+
+  /* ── COLLAPSIBLE CAPO FINDER ── */
+  .capo-finder {
+    background: var(--surface); border: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+  .capo-finder-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 0.65rem 1rem; cursor:pointer; user-select:none;
+  }
+  .capo-finder-header:hover { background:rgba(201,168,76,0.04); }
+  .capo-finder-title { font-size:0.72rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--gold); }
+  .capo-finder-chevron { font-size:0.7rem; color:var(--muted); transition:transform 0.2s; }
+  .capo-finder.open .capo-finder-chevron { transform:rotate(180deg); }
+  .capo-finder-body { display:none; padding:0.75rem 1rem 1rem; border-top:1px solid var(--border); }
+  .capo-finder.open .capo-finder-body { display:block; }
+
+  /* ── PICK MODE — responsive wrap ── */
+  .pick-mode-wrap {
+    display: flex; flex-wrap: wrap; gap: 2px;
+  }
+  .pick-mode-btn {
+    padding: 0.35rem 0.6rem; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-family: 'DM Mono', monospace;
+    font-size: 0.62rem; letter-spacing: 0.04em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+  }
+  .pick-mode-btn.active { background: var(--surface); color: var(--gold-light); border-color: var(--gold); }
 
   /* ── MAIN SCROLL AREA ── */
   #app-main {
@@ -673,18 +763,58 @@
 
 <header>
   <div class="logo">Fret<span>board</span></div>
-  <div class="tab-bar">
-    <button class="tab-btn active-chords" onclick="setTab('chords')">Chords</button>
-    <button class="tab-btn" onclick="setTab('progs')">Progressions</button>
-    <button class="tab-btn" onclick="setTab('jazz')">Jazz</button>
-    <button class="tab-btn" onclick="setTab('jazzprogs')">Jazz Progs</button>
-    <button class="tab-btn" onclick="setTab('neosoul')">Neo-Soul</button>
-    <button class="tab-btn" onclick="setTab('neoprogs')">NS Progs</button>
-    <button class="tab-btn" onclick="setTab('story')" style="color:var(--amber)">✦ Story</button>
-    <button class="tab-btn" onclick="setTab('reverse')">⟳ Key Finder</button>
-    <button class="tab-btn" id="favTabBtn" onclick="setTab('favs')" style="display:none">♥ Saved</button>
+  <div class="nav-wrap">
+    <!-- Explore dropdown -->
+    <div class="nav-dropdown" id="navDropdown">
+      <button class="nav-dropdown-btn" onclick="toggleNavDropdown()">
+        <span id="navDropdownLabel">Explore</span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="nav-menu" id="navMenu">
+        <div class="nav-menu-section">Chords</div>
+        <button class="nav-menu-item" data-tab="chords"    onclick="setTabFromMenu('chords')">Chords</button>
+        <button class="nav-menu-item" data-tab="jazz"      onclick="setTabFromMenu('jazz')">Jazz Chords</button>
+        <button class="nav-menu-item" data-tab="neosoul"   onclick="setTabFromMenu('neosoul')">Neo-Soul Chords</button>
+        <div class="nav-menu-section">Progressions</div>
+        <button class="nav-menu-item" data-tab="progs"     onclick="setTabFromMenu('progs')">Progressions</button>
+        <button class="nav-menu-item" data-tab="jazzprogs" onclick="setTabFromMenu('jazzprogs')">Jazz Progressions</button>
+        <button class="nav-menu-item" data-tab="neoprogs"  onclick="setTabFromMenu('neoprogs')">Neo-Soul Progressions</button>
+        <div class="nav-menu-section">Tools</div>
+        <button class="nav-menu-item" data-tab="story"     onclick="setTabFromMenu('story')">✦ Chord Story</button>
+        <button class="nav-menu-item" data-tab="reverse"   onclick="setTabFromMenu('reverse')">⟳ Key Finder</button>
+        <button class="nav-menu-item" data-tab="favs" id="favMenuBtn" style="display:none" onclick="setTabFromMenu('favs')">♥ Saved Chords</button>
+      </div>
+    </div>
+    <!-- Guide / Help -->
+    <button class="nav-guide-btn" id="guideBtn" onclick="toggleHelp()">? Guide</button>
   </div>
 </header>
+
+<!-- Help modal -->
+<div class="help-overlay" id="helpOverlay" onclick="if(event.target===this)toggleHelp()">
+  <div class="help-modal">
+    <button class="help-close" onclick="toggleHelp()">✕</button>
+    <div class="help-title">Fretboard Guide</div>
+    <div class="help-sub">Everything you need to know to get started</div>
+
+    <div class="help-section-title">Chords</div>
+    <div class="help-item"><div class="help-icon">🎸</div><div class="help-text"><strong>Chords tab</strong> — Pick a root note and quality (Major, Minor, Dom 7, etc.) to see 3 voicings: open, mid-neck, and a lush colour variant. Tap any card to see the fingering, playing tip, and strum button inline.</div></div>
+    <div class="help-item"><div class="help-icon">🎷</div><div class="help-text"><strong>Jazz &amp; Neo-Soul Chords</strong> — Shell voicings, extended harmonies (maj9, m9, 7♭9) and altered tensions. Change the root to transpose any chord. Use the search bar to filter by type.</div></div>
+    <div class="help-item"><div class="help-icon">♥</div><div class="help-text"><strong>Saved Chords</strong> — Tap the ♥ button on any chord to save it. Saved chords appear in the ♥ Saved section of the Explore menu and persist between sessions.</div></div>
+
+    <div class="help-section-title">Progressions</div>
+    <div class="help-item"><div class="help-icon">🎵</div><div class="help-text"><strong>Progressions, Jazz Progs, NS Progs</strong> — Browse 83 progressions across 18 categories. Select a key, tap any progression to expand it and see chord diagrams. Every progression includes a song example and a ▶ Play button.</div></div>
+    <div class="help-item"><div class="help-icon">▶</div><div class="help-text"><strong>Playback controls</strong> — Use the Play button to hear a progression. Toggle <strong>Loop</strong> to repeat. Adjust <strong>BPM</strong> with the slider. Switch between <strong>Strum, Travis, Boom-Chick, Waltz,</strong> and <strong>Arpeggio</strong> picking styles.</div></div>
+
+    <div class="help-section-title">Tools</div>
+    <div class="help-item"><div class="help-icon">✦</div><div class="help-text"><strong>Chord Story</strong> — Pick a mood and the app generates a custom progression with song examples. Tap any chord pill to swap it, use the action buttons to shift key or generate a variation, and play it back with any picking style.</div></div>
+    <div class="help-item"><div class="help-icon">⟳</div><div class="help-text"><strong>Key Finder</strong> — Type any chords separated by spaces (e.g. Am G C F) and the app identifies the most likely keys. Click a result to jump straight to Progressions in that key.</div></div>
+    <div class="help-item"><div class="help-icon">⬡</div><div class="help-text"><strong>Capo Finder</strong> — On the Chords tab, expand the Capo Finder. Choose a shape and a target key — it tells you exactly which fret to place your capo, and suggests alternative shapes with lower capo positions.</div></div>
+
+    <div class="help-section-title">Audio</div>
+    <div class="help-item"><div class="help-icon">🔊</div><div class="help-text">Audio uses the Web Audio API — no downloads required. Tap <strong>▶ Strum</strong> on any chord detail to hear a single chord. For iOS, audio activates on the first tap. Keep your device volume up.</div></div>
+  </div>
+</div>
 
 <div id="drawer-scrim" onclick="closeDrawer()"></div>
 
@@ -831,24 +961,29 @@
       <div class="view-title" id="chordsTitle">C Major</div>
       <div class="view-sub">Open, first & second positions</div>
 
-      <!-- ── CAPO FINDER ── -->
+      <!-- ── CAPO FINDER (collapsible) ── -->
       <div class="capo-finder" id="capoFinderBlock">
-        <div class="capo-finder-title">⬡ Capo Finder</div>
-        <div class="capo-finder-row">
-          <span class="capo-finder-label">I'm playing a</span>
-          <select id="capoFinderShape" onchange="runCapoFinder()">
-            <option>C</option><option>C#</option><option>D</option><option>D#</option>
-            <option>E</option><option>F</option><option>F#</option><option>G</option>
-            <option>G#</option><option>A</option><option>A#</option><option>B</option>
-          </select>
-          <span class="capo-finder-label">shape, want to sound like</span>
-          <select id="capoFinderTarget" onchange="runCapoFinder()">
-            <option>C</option><option>C#</option><option>D</option><option>D#</option>
-            <option>E</option><option>F</option><option>F#</option><option>G</option>
-            <option>G#</option><option>A</option><option>A#</option><option>B</option>
-          </select>
+        <div class="capo-finder-header" onclick="toggleCapoFinder()">
+          <span class="capo-finder-title">⬡ Capo Finder</span>
+          <span class="capo-finder-chevron">▼</span>
         </div>
-        <div id="capoFinderResult"></div>
+        <div class="capo-finder-body">
+          <div class="capo-finder-row">
+            <span class="capo-finder-label">I'm playing a</span>
+            <select id="capoFinderShape" onchange="runCapoFinder()">
+              <option>C</option><option>C#</option><option>D</option><option>D#</option>
+              <option>E</option><option>F</option><option>F#</option><option>G</option>
+              <option>G#</option><option>A</option><option>A#</option><option>B</option>
+            </select>
+            <span class="capo-finder-label">shape, want to sound like</span>
+            <select id="capoFinderTarget" onchange="runCapoFinder()">
+              <option>C</option><option>C#</option><option>D</option><option>D#</option>
+              <option>E</option><option>F</option><option>F#</option><option>G</option>
+              <option>G#</option><option>A</option><option>A#</option><option>B</option>
+            </select>
+          </div>
+          <div id="capoFinderResult"></div>
+        </div>
       </div>
 
       <!-- Capo position selector -->
@@ -1330,7 +1465,7 @@ let neoSelectedId  = null;
 function buildFretboardSVG(voicing, baseFret) {
   const SC = 6, FR = 5;
   const W = 148, H = 130;
-  const left = 34, top = 24, right = W - 14, bottom = H - 14;
+  const left = 26, top = 24, right = W - 10, bottom = H - 14;
   const strW = (right - left) / (SC - 1);
   const fretH = (bottom - top) / FR;
 
@@ -1339,7 +1474,7 @@ function buildFretboardSVG(voicing, baseFret) {
   if (baseFret === 1) {
     svg += `<line x1="${left}" y1="${top}" x2="${right}" y2="${top}" stroke="#c9a84c" stroke-width="3.5"/>`;
   } else {
-    svg += `<text x="${left-8}" y="${top+fretH*0.5+4}" fill="#a09070" font-size="12" font-weight="500" font-family="DM Mono,monospace" text-anchor="end">${baseFret}</text>`;
+    svg += `<text x="${left-6}" y="${top+fretH*0.5+4}" fill="#a09070" font-size="11" font-weight="500" font-family="DM Mono,monospace" text-anchor="end">${baseFret}</text>`;
     svg += `<line x1="${left}" y1="${top}" x2="${right}" y2="${top}" stroke="#3a3228" stroke-width="1"/>`;
   }
   for (let f = 0; f <= FR; f++) {
@@ -2351,12 +2486,9 @@ function syncRoot(val) {
 
 function setTab(tab) {
   currentTab = tab;
-  // Update tab button active states
-  document.querySelectorAll('.tab-btn').forEach(btn => { btn.className = 'tab-btn'; });
-  const tabMap = { chords:0, progs:1, jazz:2, jazzprogs:3, neosoul:4, neoprogs:5, story:6, reverse:7, favs:8 };
-  const activeClass = { chords:'active-chords', progs:'active-progs', jazz:'active-jazz', jazzprogs:'active-jazzprogs', neosoul:'active-neosoul', neoprogs:'active-neoprogs', story:'active-progs', reverse:'active-chords', favs:'active-chords' };
-  const btns = document.querySelectorAll('.tab-btn');
-  if (btns[tabMap[tab]]) btns[tabMap[tab]].classList.add(activeClass[tab]);
+
+  // Update nav dropdown active state
+  updateNavState(tab);
 
   // Show/hide tab views
   document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
@@ -2369,25 +2501,16 @@ function setTab(tab) {
     if (el) el.style.display = id === 'ds-'+tab ? 'block' : 'none';
   });
 
-  // Scroll active tab button into view in the scrollable tab bar
-  const activBtn = btns[tabMap[tab]];
-  if (activBtn) activBtn.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'nearest' });
-
   // Scroll content area back to top on every tab switch
   const mainEl = document.getElementById('app-main');
   if (mainEl) mainEl.scrollTop = 0;
 
-  // Mobile controls visibility — guard against null id (favs has none)
+  // Mobile controls visibility
   const mobileControlMap = {
-    chords:    'mobileRootRow',
-    progs:     'mobileProgsControls',
-    jazz:      'mobileJazzControls',
-    jazzprogs: 'mobileJazzProgsControls',
-    neosoul:   'mobileNeoControls',
-    neoprogs:  'mobileNeoProgsControls',
-    story:     null,
-    reverse:   null,
-    favs:      null,
+    chords:    'mobileRootRow',   progs:     'mobileProgsControls',
+    jazz:      'mobileJazzControls', jazzprogs: 'mobileJazzProgsControls',
+    neosoul:   'mobileNeoControls',  neoprogs:  'mobileNeoProgsControls',
+    story: null, reverse: null, favs: null,
   };
   Object.entries(mobileControlMap).forEach(([t, id]) => {
     if (!id) return;
@@ -3084,11 +3207,11 @@ function loadFavs() {
 }
 
 function updateFavTabVisibility() {
-  const btn = document.getElementById('favTabBtn');
+  const menuItem = document.getElementById('favMenuBtn');
   const count = Object.keys(favourites).length;
-  if (btn) {
-    btn.style.display = count > 0 ? '' : 'none';
-    btn.textContent = `♥ Saved (${count})`;
+  if (menuItem) {
+    menuItem.style.display = count > 0 ? '' : 'none';
+    menuItem.textContent = `♥ Saved Chords (${count})`;
   }
 }
 
@@ -3125,7 +3248,60 @@ function makeFavBtn(id, chordData) {
 }
 
 // ════════════════════════════════════════════════════════════════
-// CAPO FINDER
+// NAV DROPDOWN
+// ════════════════════════════════════════════════════════════════
+function toggleNavDropdown() {
+  const dd = document.getElementById('navDropdown');
+  dd.classList.toggle('open');
+}
+
+function closeNavDropdown() {
+  document.getElementById('navDropdown').classList.remove('open');
+}
+
+function setTabFromMenu(tab) {
+  closeNavDropdown();
+  setTab(tab);
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+  const dd = document.getElementById('navDropdown');
+  if (dd && !dd.contains(e.target)) dd.classList.remove('open');
+});
+
+// ── Update dropdown label and active item to reflect current tab ──
+function updateNavState(tab) {
+  const labels = {
+    chords:'Chords', progs:'Progressions', jazz:'Jazz', jazzprogs:'Jazz Progs',
+    neosoul:'Neo-Soul', neoprogs:'NS Progs', story:'✦ Story', reverse:'⟳ Key Finder', favs:'♥ Saved'
+  };
+  const labelEl = document.getElementById('navDropdownLabel');
+  if (labelEl) labelEl.textContent = labels[tab] || 'Explore';
+
+  // Update active item in menu
+  document.querySelectorAll('.nav-menu-item').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// HELP MODAL
+// ════════════════════════════════════════════════════════════════
+function toggleHelp() {
+  const overlay = document.getElementById('helpOverlay');
+  const btn     = document.getElementById('guideBtn');
+  const isOpen  = overlay.classList.toggle('open');
+  if (btn) btn.classList.toggle('active', isOpen);
+}
+
+// ════════════════════════════════════════════════════════════════
+// CAPO FINDER — collapsible toggle
+// ════════════════════════════════════════════════════════════════
+function toggleCapoFinder() {
+  document.getElementById('capoFinderBlock').classList.toggle('open');
+}
+
 // ════════════════════════════════════════════════════════════════
 // Common open chord shapes and their root notes
 const OPEN_SHAPE_ROOTS = ['E','A','D','G','C','F','B','F#','G#','C#','D#','A#'];
