@@ -1844,6 +1844,7 @@ function syncProgKey(val) {
   ['progKeyDesktop','progKeyMobile'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value=val;
   });
+  refreshDrawerActive();
   renderProgressions();
   updateDrawerLabel();
 }
@@ -1862,6 +1863,7 @@ function setJazzFilter(btn, cat) {
 function syncJazzRoot(val) {
   jazzRoot = val;
   ['jazzRootDesktop','jazzRootMobile'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=val; });
+  refreshDrawerActive();
   renderJazz();
   updateDrawerLabel();
 }
@@ -2043,6 +2045,7 @@ function setNeoFilter(btn, cat) {
 function syncNeoRoot(val) {
   neoRoot = val;
   ['neoRootDesktop','neoRootMobile'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=val; });
+  refreshDrawerActive();
   renderNeoSoul();
   updateDrawerLabel();
 }
@@ -2304,6 +2307,7 @@ function setJazzProgFilter(btn, cat) {
 function syncJazzProgKey(val) {
   jazzProgKey = val;
   ['jazzProgKeyDesktop','jazzProgKeyMobile'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=val; });
+  refreshDrawerActive();
   renderJazzProgressions();
   updateDrawerLabel();
 }
@@ -2340,6 +2344,7 @@ function setNeoProgFilter(btn, cat) {
 function syncNeoProgKey(val) {
   neoProgKey = val;
   ['neoProgKeyDesktop','neoProgKeyMobile'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=val; });
+  refreshDrawerActive();
   renderNeoProgressions();
   updateDrawerLabel();
 }
@@ -2481,10 +2486,60 @@ function updateDrawerLabel() {
 // ════════════════════════════════════════════════════════════════
 // SYNC ROOT / TAB SWITCHING
 // ════════════════════════════════════════════════════════════════
+// Refresh active states on key/filter buttons already inside the open drawer
+// without rebuilding the whole content (preserves scroll position)
+function refreshDrawerActive() {
+  const drawer = document.getElementById('drawer');
+  if (!drawer || !drawer.classList.contains('open')) return;
+
+  // Key grid buttons — match against the relevant state variable for current tab
+  const activeKey = {
+    chords:    currentRoot,
+    progs:     getProgKey(),
+    jazz:      jazzRoot,
+    jazzprogs: jazzProgKey,
+    neosoul:   neoRoot,
+    neoprogs:  neoProgKey,
+  }[currentTab];
+
+  if (activeKey) {
+    document.querySelectorAll('#drawer-body .key-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.textContent === activeKey);
+    });
+  }
+
+  // Quality pills for chords tab
+  if (currentTab === 'chords') {
+    const qLabels = { major:'Major', minor:'Minor', dom7:'Dom 7', maj7:'Maj 7', min7:'Min 7', sus2:'Sus2' };
+    document.querySelectorAll('#drawer-body .pill').forEach(btn => {
+      const q = Object.entries(qLabels).find(([,label]) => label === btn.textContent)?.[0];
+      btn.classList.toggle('active', q === currentQuality);
+    });
+  }
+
+  // Filter chips for progression tabs
+  const activeFilter = {
+    progs:     progFilter,
+    jazz:      jazzFilter,
+    jazzprogs: jazzProgFilter,
+    neosoul:   neoFilter,
+    neoprogs:  neoProgFilter,
+  }[currentTab];
+
+  if (activeFilter) {
+    document.querySelectorAll('#drawer-body .filter-chip').forEach(btn => {
+      const cat = btn.textContent.toLowerCase().replace(/[\s-]/g,'');
+      const norm = activeFilter.replace(/[\s-]/g,'');
+      btn.classList.toggle('active', cat === norm || (activeFilter === 'all' && btn.textContent === 'All'));
+    });
+  }
+}
+
 function syncRoot(val) {
   currentRoot = val;
   ['rootSelectDesktop','rootSelectMobile'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=val; });
   selectedChordIdx = 0;
+  refreshDrawerActive();
   renderChords();
 }
 
