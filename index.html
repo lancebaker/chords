@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Fretboard — Chord Explorer</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
 <style>
@@ -30,6 +30,10 @@
     background: var(--surface); border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
     padding: 0.75rem 1.25rem; gap: 1rem; height: 54px;
+    /* Safe area for iPhone notch / Dynamic Island */
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-left: max(1.25rem, env(safe-area-inset-left));
+    padding-right: max(1.25rem, env(safe-area-inset-right));
   }
   .logo { font-family:'Playfair Display',serif; font-size:1.5rem; font-weight:900; color:var(--gold); letter-spacing:-0.02em; white-space:nowrap; }
   .logo span { color:var(--cream); font-weight:400; font-style:italic; }
@@ -97,8 +101,60 @@
   /* ── CHORD GRID ── */
   .chord-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 1rem; margin-top: 1rem;
+  }
+
+  /* ── CAPO FINDER ── */
+  .capo-finder {
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 0.85rem 1rem; margin-bottom: 1rem;
+  }
+  .capo-finder-title {
+    font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 0.6rem;
+  }
+  .capo-finder-row {
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  }
+  .capo-finder-label {
+    font-size: 0.78rem; color: var(--muted); white-space: nowrap;
+  }
+  .capo-finder select {
+    font-size: 0.82rem; padding: 0.4rem 0.6rem;
+  }
+  .capo-result {
+    display: flex; align-items: center; gap: 0.75rem; margin-top: 0.65rem;
+    flex-wrap: wrap;
+  }
+  .capo-result-fret {
+    font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900;
+    color: var(--gold); line-height: 1;
+  }
+  .capo-result-desc {
+    font-family: 'Crimson Pro', serif; font-size: 0.95rem;
+    color: var(--cream); line-height: 1.5; flex: 1; min-width: 160px;
+  }
+  .capo-result-none {
+    font-family: 'Crimson Pro', serif; font-style: italic;
+    font-size: 0.95rem; color: var(--muted);
+  }
+  .capo-alt-row {
+    margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;
+  }
+  .capo-alt-label {
+    font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .capo-alt-chip {
+    font-size: 0.72rem; padding: 0.2rem 0.55rem;
+    border: 1px solid var(--border); color: var(--gold-light);
+    background: transparent; cursor: pointer; transition: all 0.15s;
+  }
+  .capo-alt-chip:hover { border-color: var(--gold); background: rgba(201,168,76,0.1); }
+  .capo-impractical {
+    font-size: 0.72rem; color: var(--mute-red); font-style: italic;
+    margin-top: 0.3rem;
   }
   .chord-card {
     background:var(--surface); border:1px solid var(--border);
@@ -250,6 +306,8 @@
     display:flex; align-items:center; justify-content:space-between; gap:1rem;
     user-select:none; -webkit-tap-highlight-color:transparent; position:relative;
     flex-shrink:0;
+    /* Safe area for iPhone home bar */
+    padding-bottom: max(0.65rem, env(safe-area-inset-bottom));
   }
   #drawer-handle::before {
     content:''; position:absolute; left:50%; top:0.4rem; transform:translateX(-50%);
@@ -294,6 +352,9 @@
     .view-title { font-size: 2.8rem; }
     .chord-grid { grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); }
     .prog-diagrams { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); }
+    /* Hide mobile-only controls on desktop */
+    #mobileRootRow { display: none !important; }
+    .capo-row { display: none !important; } /* capo is in sidebar on desktop */
   }
   @media (max-width: 767px) {
     #desktop-sidebar { display: none; }
@@ -369,7 +430,214 @@
     display: inline-block;
   }
 
-  /* ── CHORD TRANSITION TIPS ── */
+  /* ── INLINE CHORD DETAIL (appears below selected card in grid) ── */
+  .chord-detail-inline {
+    grid-column: 1 / -1; /* span full grid width */
+    background: var(--surface);
+    border: 1px solid var(--gold);
+    border-top: 3px solid var(--gold);
+    padding: 1.1rem 1.25rem;
+    animation: fadeIn 0.2s ease;
+    position: relative;
+  }
+  .chord-detail-inline::before {
+    content: '';
+    position: absolute;
+    top: -9px;
+    /* Arrow will be positioned by JS based on which card column is selected */
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid var(--gold);
+    left: 1.5rem; /* default; overridden inline */
+  }
+  .chord-detail-inline .detail-eyebrow {
+    font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 0.35rem;
+  }
+  .chord-detail-inline .detail-title {
+    font-family: 'Playfair Display', serif; font-size: 1.5rem;
+    color: var(--gold); margin-bottom: 0.5rem;
+  }
+  .chord-detail-inline .detail-meta {
+    display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.85rem;
+  }
+  .chord-detail-close {
+    position: absolute; top: 0.6rem; right: 0.75rem;
+    background: none; border: none; color: var(--muted);
+    font-size: 1.1rem; cursor: pointer; line-height: 1;
+    padding: 0.2rem 0.4rem;
+  }
+  .chord-detail-close:hover { color: var(--cream); }
+
+  /* ── PROGRESSION PLAYBACK ── */
+  .prog-play-btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.55rem 1.1rem;
+    border: 1px solid var(--gold); background: transparent;
+    color: var(--gold); font-family: 'DM Mono', monospace;
+    font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .prog-play-btn:hover { background: var(--gold); color: var(--bg); }
+  .prog-play-btn.playing { background: var(--gold); color: var(--bg); }
+  .prog-play-btn .play-icon { font-size: 0.9rem; }
+
+  /* Playback controls bar — sits above chord diagrams */
+  .playback-bar {
+    display: flex; align-items: center; gap: 0.75rem;
+    flex-wrap: wrap; margin-bottom: 0.85rem;
+    padding: 0.6rem 0.85rem;
+    background: var(--surface2); border: 1px solid var(--border);
+  }
+  .playback-bar .section-label { margin: 0; }
+
+  /* Tempo slider */
+  .tempo-wrap {
+    display: flex; align-items: center; gap: 0.5rem;
+    margin-left: auto;
+  }
+  .tempo-label {
+    font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); white-space: nowrap;
+  }
+  .tempo-value {
+    font-size: 0.78rem; color: var(--gold); min-width: 3.5ch; text-align: right;
+  }
+  input[type=range].tempo-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 80px; height: 3px;
+    background: var(--border); border-radius: 2px; outline: none; cursor: pointer;
+    padding: 0; border: none;
+  }
+  input[type=range].tempo-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--gold); cursor: pointer;
+  }
+  input[type=range].tempo-slider::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%; background: var(--gold);
+    border: none; cursor: pointer;
+  }
+
+  /* Pick mode toggle */
+  .pick-mode-wrap { display: flex; gap: 0; }
+  .pick-mode-btn {
+    padding: 0.35rem 0.65rem; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-family: 'DM Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.06em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .pick-mode-btn + .pick-mode-btn { border-left: none; }
+  .pick-mode-btn.active { background: var(--surface); color: var(--gold-light); border-color: var(--gold); }
+
+  /* Loop indicator pulse */
+  @keyframes loopPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .loop-active { animation: loopPulse 1s ease-in-out infinite; }
+
+  /* Highlight current chord being played in sequence */
+  .seq-chord.playing-now {
+    border-color: var(--gold); background: rgba(201,168,76,0.15);
+    transform: scale(1.05); transition: transform 0.15s;
+  }
+
+  /* ── STORY MODE ── */
+  .story-mood-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem; margin-bottom: 1.5rem;
+  }
+  .mood-card {
+    padding: 1rem 0.85rem; border: 1px solid var(--border);
+    background: var(--surface); cursor: pointer; transition: all 0.2s;
+    text-align: center;
+  }
+  .mood-card:hover, .mood-card.active { border-color: var(--gold); background: rgba(201,168,76,0.06); }
+  .mood-icon  { font-size: 1.6rem; margin-bottom: 0.35rem; }
+  .mood-name  { font-family:'Playfair Display',serif; font-size:0.95rem; color:var(--gold-light); margin-bottom:0.2rem; }
+  .mood-desc  { font-size:0.65rem; color:var(--muted); line-height:1.4; }
+  .story-output {
+    border: 1px solid var(--gold); border-top: 3px solid var(--gold);
+    padding: 1.25rem; background: rgba(201,168,76,0.03); animation: fadeIn 0.3s ease;
+    margin-bottom: 1.5rem;
+  }
+  .story-title { font-family:'Playfair Display',serif; font-size:1.5rem; color:var(--gold); margin-bottom:0.3rem; }
+  .story-sub   { font-family:'Crimson Pro',serif; font-style:italic; font-size:0.95rem; color:var(--muted); margin-bottom:1rem; }
+  .story-chord-row {
+    display: flex; align-items: center; gap: 0.5rem;
+    flex-wrap: wrap; margin-bottom: 1rem;
+  }
+  .story-chord-pill {
+    padding: 0.5rem 0.85rem; background: var(--surface2); border: 1px solid var(--border);
+    text-align: center; cursor: pointer; transition: all 0.15s; position: relative;
+  }
+  .story-chord-pill:hover { border-color: var(--gold); }
+  .story-chord-pill.playing-now { border-color: var(--gold); background: rgba(201,168,76,0.15); transform: scale(1.08); }
+  .story-chord-name { font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--gold-light); }
+  .story-chord-deg  { font-size:0.6rem; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:0.2rem; }
+  .story-chord-alt  {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+    background: var(--surface); border: 1px solid var(--gold);
+    display: none;
+  }
+  .story-chord-pill:hover .story-chord-alt { display: block; }
+  .story-alt-option {
+    padding: 0.4rem 0.6rem; font-size: 0.72rem; color: var(--cream);
+    cursor: pointer; border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  .story-alt-option:last-child { border-bottom: none; }
+  .story-alt-option:hover { background: rgba(201,168,76,0.1); color: var(--gold-light); }
+  .story-actions {
+    display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.85rem;
+  }
+  .story-btn {
+    padding: 0.5rem 1rem; border: 1px solid var(--border); background: transparent;
+    color: var(--muted); font-family:'DM Mono',monospace; font-size:0.72rem;
+    letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:all 0.2s;
+  }
+  .story-btn:hover { border-color:var(--gold); color:var(--gold); }
+  .story-btn.primary { border-color:var(--gold); color:var(--gold); }
+  .story-btn.primary:hover { background:var(--gold); color:var(--bg); }
+  .story-diag-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr));
+    gap: 0.75rem; margin-top: 1rem;
+  }
+
+  /* ── REVERSE LOOKUP ── */
+  .reverse-wrap { margin-bottom: 1.5rem; }
+  .reverse-input-row {
+    display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem; flex-wrap: wrap;
+  }
+  .reverse-input {
+    flex: 1; min-width: 200px;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--cream);
+    font-family:'DM Mono',monospace; font-size:0.88rem; padding:0.55rem 0.85rem; outline:none;
+  }
+  .reverse-input:focus { border-color: var(--gold); }
+  .reverse-run-btn {
+    padding:0.55rem 1rem; border:1px solid var(--gold); background:transparent;
+    color:var(--gold); font-family:'DM Mono',monospace; font-size:0.75rem;
+    letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:all 0.2s;
+    white-space:nowrap;
+  }
+  .reverse-run-btn:hover { background:var(--gold); color:var(--bg); }
+  .reverse-result { animation: fadeIn 0.3s ease; }
+  .key-result-card {
+    background:var(--surface); border:1px solid var(--border);
+    padding:0.85rem 1rem; margin-bottom:0.5rem; cursor:pointer; transition:all 0.15s;
+  }
+  .key-result-card:hover { border-color:var(--gold); background:rgba(201,168,76,0.04); }
+  .key-result-header {
+    display:flex; align-items:center; gap:0.75rem; margin-bottom:0.3rem;
+  }
+  .key-result-name { font-family:'Playfair Display',serif; font-size:1.2rem; color:var(--gold-light); }
+  .key-result-score {
+    font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase;
+    padding:0.15rem 0.45rem; border:1px solid var(--gold); color:var(--gold);
+  }
+  .key-result-mode { font-size:0.72rem; color:var(--muted); }
+  .key-result-matches { font-size:0.78rem; color:var(--cream); margin-top:0.25rem; font-family:'Crimson Pro',serif; }
+  .key-result-outside { font-size:0.75rem; color:var(--mute-red); font-family:'Crimson Pro',serif; font-style:italic; }
   .transition-tip {
     margin-top: 0.85rem; padding: 0.75rem 1rem;
     background: var(--surface); border-left: 2px solid var(--tab-jazz);
@@ -412,6 +680,8 @@
     <button class="tab-btn" onclick="setTab('jazzprogs')">Jazz Progs</button>
     <button class="tab-btn" onclick="setTab('neosoul')">Neo-Soul</button>
     <button class="tab-btn" onclick="setTab('neoprogs')">NS Progs</button>
+    <button class="tab-btn" onclick="setTab('story')" style="color:var(--amber)">✦ Story</button>
+    <button class="tab-btn" onclick="setTab('reverse')">⟳ Key Finder</button>
     <button class="tab-btn" id="favTabBtn" onclick="setTab('favs')" style="display:none">♥ Saved</button>
   </div>
 </header>
@@ -441,7 +711,7 @@
         <option value="5">Fret 5</option><option value="6">Fret 6</option>
         <option value="7">Fret 7</option>
       </select>
-      <div id="capoSoundsAsDesktop" style="font-size:0.72rem;color:var(--amber);min-height:1.2em;margin-bottom:0.5rem;"></div>
+      <div id="capoSoundsAsDesktop" style="font-size:0.72rem;color:var(--amber);min-height:1.2em;"></div>
     </div>
 
     <!-- Progressions sidebar -->
@@ -459,6 +729,9 @@
         <button class="filter-chip" onclick="setProgFilter(this,'dark')">Dark</button>
         <button class="filter-chip" onclick="setProgFilter(this,'folk')">Folk</button>
         <button class="filter-chip" onclick="setProgFilter(this,'modal')">Modal</button>
+        <button class="filter-chip" onclick="setProgFilter(this,'blues')">Blues</button>
+        <button class="filter-chip" onclick="setProgFilter(this,'gospel')">Gospel</button>
+        <button class="filter-chip" onclick="setProgFilter(this,'latin')">Latin</button>
         <button class="filter-chip" onclick="setProgFilter(this,'neosoul')">Neo-Soul</button>
       </div>
       <div class="drawer-label">Progressions</div>
@@ -517,6 +790,8 @@
         <button class="filter-chip" onclick="setJazzProgFilter(this,'modal')">Modal</button>
         <button class="filter-chip" onclick="setJazzProgFilter(this,'blues')">Blues</button>
         <button class="filter-chip" onclick="setJazzProgFilter(this,'turnaround')">Turnaround</button>
+        <button class="filter-chip" onclick="setJazzProgFilter(this,'latin')">Latin</button>
+        <button class="filter-chip" onclick="setJazzProgFilter(this,'ballad')">Ballad</button>
       </div>
       <div class="drawer-label" style="margin-top:0.5rem">Progressions</div>
       <div id="jazzProgListDesktop"></div>
@@ -537,6 +812,8 @@
         <button class="filter-chip" onclick="setNeoProgFilter(this,'groove')">Groove</button>
         <button class="filter-chip" onclick="setNeoProgFilter(this,'minor')">Minor</button>
         <button class="filter-chip" onclick="setNeoProgFilter(this,'modal')">Modal</button>
+        <button class="filter-chip" onclick="setNeoProgFilter(this,'gospel')">Gospel</button>
+        <button class="filter-chip" onclick="setNeoProgFilter(this,'quietstorm')">Quiet Storm</button>
       </div>
       <div class="drawer-label" style="margin-top:0.5rem">Progressions</div>
       <div id="neoProgListDesktop"></div>
@@ -553,7 +830,28 @@
     <div id="tab-chords" class="tab-view active">
       <div class="view-title" id="chordsTitle">C Major</div>
       <div class="view-sub">Open, first & second positions</div>
-      <!-- Capo selector -->
+
+      <!-- ── CAPO FINDER ── -->
+      <div class="capo-finder" id="capoFinderBlock">
+        <div class="capo-finder-title">⬡ Capo Finder</div>
+        <div class="capo-finder-row">
+          <span class="capo-finder-label">I'm playing a</span>
+          <select id="capoFinderShape" onchange="runCapoFinder()">
+            <option>C</option><option>C#</option><option>D</option><option>D#</option>
+            <option>E</option><option>F</option><option>F#</option><option>G</option>
+            <option>G#</option><option>A</option><option>A#</option><option>B</option>
+          </select>
+          <span class="capo-finder-label">shape, want to sound like</span>
+          <select id="capoFinderTarget" onchange="runCapoFinder()">
+            <option>C</option><option>C#</option><option>D</option><option>D#</option>
+            <option>E</option><option>F</option><option>F#</option><option>G</option>
+            <option>G#</option><option>A</option><option>A#</option><option>B</option>
+          </select>
+        </div>
+        <div id="capoFinderResult"></div>
+      </div>
+
+      <!-- Capo position selector -->
       <div class="capo-row">
         <span class="capo-label">Capo</span>
         <select class="capo-select" id="capoSelect" onchange="updateCapo(this.value)">
@@ -566,6 +864,7 @@
         <span id="capoBadge" style="display:none" class="capo-badge">Capo 1</span>
         <span id="capoSoundsAs" style="font-size:0.72rem;color:var(--muted);"></span>
       </div>
+
       <!-- Mobile root row -->
       <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;" id="mobileRootRow">
         <span class="section-label" style="margin:0">Root</span>
@@ -577,7 +876,6 @@
       </div>
       <div id="chordsQualityRow" class="quality-row" style="margin-bottom:1rem;"></div>
       <div id="chordsGrid" class="chord-grid"></div>
-      <div id="chordsDetail"></div>
     </div>
 
     <!-- ── TAB 2: PROGRESSIONS ── -->
@@ -600,6 +898,9 @@
           <button class="filter-chip" onclick="setProgFilter(this,'dark')">Dark</button>
           <button class="filter-chip" onclick="setProgFilter(this,'folk')">Folk</button>
           <button class="filter-chip" onclick="setProgFilter(this,'modal')">Modal</button>
+          <button class="filter-chip" onclick="setProgFilter(this,'blues')">Blues</button>
+          <button class="filter-chip" onclick="setProgFilter(this,'gospel')">Gospel</button>
+          <button class="filter-chip" onclick="setProgFilter(this,'latin')">Latin</button>
           <button class="filter-chip" onclick="setProgFilter(this,'neosoul')">Neo-Soul</button>
         </div>
       </div>
@@ -666,7 +967,37 @@
       <div id="neoDetail"></div>
     </div>
 
-    <!-- ── TAB 7: FAVOURITES ── -->
+    <!-- ── TAB 7: STORY MODE ── -->
+    <div id="tab-story" class="tab-view">
+      <div class="view-title" style="color:var(--amber)">✦ Chord Story</div>
+      <div class="view-sub">Pick a mood — get a progression, hear it loop, swap chords</div>
+      <div class="story-mood-grid" id="storyMoodGrid"></div>
+      <div id="storyOutput"></div>
+    </div>
+
+    <!-- ── TAB 8: KEY FINDER ── -->
+    <div id="tab-reverse" class="tab-view">
+      <div class="view-title">⟳ Key Finder</div>
+      <div class="view-sub">Type the chords you're playing — find out what key you're in</div>
+      <div class="reverse-wrap">
+        <div class="reverse-input-row">
+          <input class="reverse-input" id="reverseInput" type="text"
+            placeholder="e.g.  Am  G  C  F   or   Em  D  A"
+            oninput="runReverseLookup()">
+          <button class="reverse-run-btn" onclick="runReverseLookup()">Analyze</button>
+        </div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.85rem;line-height:1.6;">
+          Separate chords with spaces. Use m for minor, 7, maj7, m7 etc.<br>
+          Try: <span style="color:var(--gold-light);cursor:pointer;text-decoration:underline" onclick="document.getElementById('reverseInput').value='Am G C F';runReverseLookup()">Am G C F</span> ·
+          <span style="color:var(--gold-light);cursor:pointer;text-decoration:underline" onclick="document.getElementById('reverseInput').value='Em D A G';runReverseLookup()">Em D A G</span> ·
+          <span style="color:var(--gold-light);cursor:pointer;text-decoration:underline" onclick="document.getElementById('reverseInput').value='Dm7 G7 Cmaj7';runReverseLookup()">Dm7 G7 Cmaj7</span> ·
+          <span style="color:var(--gold-light);cursor:pointer;text-decoration:underline" onclick="document.getElementById('reverseInput').value='Gmaj9 Em9 Am9 D9';runReverseLookup()">Gmaj9 Em9 Am9 D9</span>
+        </div>
+        <div id="reverseResult"></div>
+      </div>
+    </div>
+
+    <!-- ── TAB 9: FAVOURITES ── -->
     <div id="tab-favs" class="tab-view">
       <div class="view-title" style="color:var(--gold)">♥ Saved Chords</div>
       <div class="view-sub">Your bookmarked voicings across all tabs</div>
@@ -695,6 +1026,8 @@
           <button class="filter-chip" onclick="setJazzProgFilter(this,'modal')">Modal</button>
           <button class="filter-chip" onclick="setJazzProgFilter(this,'blues')">Blues</button>
           <button class="filter-chip" onclick="setJazzProgFilter(this,'turnaround')">Turnaround</button>
+          <button class="filter-chip" onclick="setJazzProgFilter(this,'latin')">Latin</button>
+          <button class="filter-chip" onclick="setJazzProgFilter(this,'ballad')">Ballad</button>
         </div>
       </div>
       <div id="jazzProgsContent"></div>
@@ -719,6 +1052,8 @@
           <button class="filter-chip" onclick="setNeoProgFilter(this,'groove')">Groove</button>
           <button class="filter-chip" onclick="setNeoProgFilter(this,'minor')">Minor</button>
           <button class="filter-chip" onclick="setNeoProgFilter(this,'modal')">Modal</button>
+          <button class="filter-chip" onclick="setNeoProgFilter(this,'gospel')">Gospel</button>
+          <button class="filter-chip" onclick="setNeoProgFilter(this,'quietstorm')">Quiet Storm</button>
         </div>
       </div>
       <div id="neoProgsContent"></div>
@@ -869,34 +1204,47 @@ const OPEN_CHORD_DB = {
 // ── TAB 2: PROGRESSIONS ─────────────────────────────────────────
 const PROGRESSIONS = [
   // CLASSIC
-  { id:'I-V-vi-IV',   name:'I–V–vi–IV',   desc:'Four chords, infinite pop songs', genre:'Pop / Rock', feel:'Uplifting, familiar', degrees:['I','V','vi','IV'], steps:[0,7,9,5], cat:'classic' },
-  { id:'I-IV-V',      name:'I–IV–V',       desc:'12-bar blues — raw and driving', genre:'Blues / Rock', feel:'Raw, driving', degrees:['I','IV','V'], steps:[0,5,7], cat:'classic' },
-  { id:'I-vi-IV-V',   name:'I–vi–IV–V',    desc:'Doo-wop and classic ballads', genre:'Pop / Ballad', feel:'Nostalgic, smooth', degrees:['I','vi','IV','V'], steps:[0,9,5,7], cat:'classic' },
-  { id:'ii-V-I',      name:'ii–V–I',       desc:'The fundamental jazz cadence', genre:'Jazz / Pop', feel:'Sophisticated, resolving', degrees:['ii','V','I'], steps:[2,7,0], mixedQ:['minor','major','major'], cat:'classic' },
-  { id:'I-iii-IV-V',  name:'I–iii–IV–V',   desc:'Classic rock build with the iii chord', genre:'Rock / Folk', feel:'Building, anthemic', degrees:['I','iii','IV','V'], steps:[0,4,5,7], cat:'classic' },
+  { id:'I-V-vi-IV',   name:'I–V–vi–IV',   desc:'Four chords, infinite pop songs', genre:'Pop / Rock', feel:'Uplifting, familiar', example:'Let Her Go — Passenger / Someone Like You — Adele', degrees:['I','V','vi','IV'], steps:[0,7,9,5], cat:'classic' },
+  { id:'I-IV-V',      name:'I–IV–V',       desc:'12-bar blues — raw and driving', genre:'Blues / Rock', feel:'Raw, driving', example:'Johnny B. Goode — Chuck Berry / La Bamba — Ritchie Valens', degrees:['I','IV','V'], steps:[0,5,7], cat:'classic' },
+  { id:'I-vi-IV-V',   name:'I–vi–IV–V',    desc:'Doo-wop and classic ballads', genre:'Pop / Ballad', feel:'Nostalgic, smooth', example:'Stand By Me — Ben E. King / Every Breath You Take — The Police', degrees:['I','vi','IV','V'], steps:[0,9,5,7], cat:'classic' },
+  { id:'ii-V-I',      name:'ii–V–I',       desc:'The fundamental jazz cadence', genre:'Jazz / Pop', feel:'Sophisticated, resolving', example:'Fly Me to the Moon — Frank Sinatra / Autumn Leaves — Nat King Cole', degrees:['ii','V','I'], steps:[2,7,0], mixedQ:['minor','major','major'], cat:'classic' },
+  { id:'I-iii-IV-V',  name:'I–iii–IV–V',   desc:'Classic rock build with the iii chord', genre:'Rock / Folk', feel:'Building, anthemic', example:'Brown Eyed Girl — Van Morrison / I Can\'t Help Myself — Four Tops', degrees:['I','iii','IV','V'], steps:[0,4,5,7], cat:'classic' },
   // FOLK
-  { id:'I-IV-I-V',    name:'I–IV–I–V',     desc:'Folk circle — the heart of ballads', genre:'Folk / Americana', feel:'Warm, grounded', degrees:['I','IV','I','V'], steps:[0,5,0,7], cat:'folk' },
-  { id:'vi-V-IV-I',   name:'vi–V–IV–I',    desc:'Descending folk cadence', genre:'Folk / Ballad', feel:'Poignant, elegiac', degrees:['vi','V','IV','I'], steps:[9,7,5,0], cat:'folk' },
-  { id:'I-iii-IV-I',  name:'I–iii–IV–I',   desc:'Wistful iii chord — Celtic and English folk', genre:'Celtic / Folk', feel:'Wistful, pastoral', degrees:['I','iii','IV','I'], steps:[0,4,5,0], cat:'folk' },
-  { id:'I-bVII-IV-I', name:'I–♭VII–IV–I',  desc:'Mixolydian folk — pre-tonal, ancient-sounding', genre:'British Folk / Folk-Rock', feel:'Modal, earthy', degrees:['I','♭VII','IV','I'], steps:[0,10,5,0], cat:'folk' },
+  { id:'I-IV-I-V',    name:'I–IV–I–V',     desc:'Folk circle — the heart of ballads', genre:'Folk / Americana', feel:'Warm, grounded', example:'Home on the Range (trad.) / Will the Circle Be Unbroken (trad.)', degrees:['I','IV','I','V'], steps:[0,5,0,7], cat:'folk' },
+  { id:'vi-V-IV-I',   name:'vi–V–IV–I',    desc:'Descending folk cadence', genre:'Folk / Ballad', feel:'Poignant, elegiac', example:'Stairway to Heaven (intro) — Led Zeppelin / Hotel California — Eagles', degrees:['vi','V','IV','I'], steps:[9,7,5,0], cat:'folk' },
+  { id:'I-iii-IV-I',  name:'I–iii–IV–I',   desc:'Wistful iii chord — Celtic and English folk', genre:'Celtic / Folk', feel:'Wistful, pastoral', example:'The Boxer — Simon & Garfunkel / Scarborough Fair — Simon & Garfunkel', degrees:['I','iii','IV','I'], steps:[0,4,5,0], cat:'folk' },
+  { id:'I-bVII-IV-I', name:'I–♭VII–IV–I',  desc:'Mixolydian folk — pre-tonal, ancient-sounding', genre:'British Folk / Folk-Rock', feel:'Modal, earthy', example:'Sweet Home Alabama — Lynyrd Skynyrd / Here Comes the Sun — The Beatles', degrees:['I','♭VII','IV','I'], steps:[0,10,5,0], cat:'folk' },
   // DARK
-  { id:'i-bVII-bVI-bVII', name:'i–♭VII–♭VI–♭VII', desc:'Andalusian cadence — dramatic and inevitable', genre:'Dark Folk / Flamenco', feel:'Ancient, dramatic', degrees:['i','♭VII','♭VI','♭VII'], steps:[0,10,8,10], minor:true, cat:'dark' },
-  { id:'i-iv-v',          name:'i–iv–v',           desc:'Pure natural minor — no resolution', genre:'Gothic Folk / Drone', feel:'Unresolved, haunting', degrees:['i','iv','v'], steps:[0,5,7], minor:true, cat:'dark' },
-  { id:'i-bVI-bIII-bVII', name:'i–♭VI–♭III–♭VII', desc:'Aeolian sweep — cinematic and dark', genre:'Dark Folk / Psych', feel:'Sweeping, melancholic', degrees:['i','♭VI','♭III','♭VII'], steps:[0,8,3,10], minor:true, cat:'dark' },
-  { id:'I-III-IV-iv',     name:'I–III–IV–iv',      desc:'Major to parallel minor — bittersweet turn', genre:'Rock / Film', feel:'Bittersweet, cinematic', degrees:['I','III','IV','iv'], steps:[0,4,5,5], mixedQ:['major','major','major','minor'], cat:'dark' },
-  { id:'i-bII',            name:'i–♭II (Phrygian)', desc:'Half-step tension — ancient mystery', genre:'Flamenco / Dark Folk', feel:'Tense, unyielding', degrees:['i','♭II'], steps:[0,1], minor:true, cat:'dark' },
+  { id:'i-bVII-bVI-bVII', name:'i–♭VII–♭VI–♭VII', desc:'Andalusian cadence — dramatic and inevitable', genre:'Dark Folk / Flamenco', feel:'Ancient, dramatic', example:'Hit the Road Jack — Ray Charles / Stairway to Heaven (main riff) — Led Zeppelin', degrees:['i','♭VII','♭VI','♭VII'], steps:[0,10,8,10], minor:true, cat:'dark' },
+  { id:'i-iv-v',          name:'i–iv–v',           desc:'Pure natural minor — no resolution', genre:'Gothic Folk / Drone', feel:'Unresolved, haunting', example:'House of the Rising Sun — The Animals / Scarborough Fair (trad.)', degrees:['i','iv','v'], steps:[0,5,7], minor:true, cat:'dark' },
+  { id:'i-bVI-bIII-bVII', name:'i–♭VI–♭III–♭VII', desc:'Aeolian sweep — cinematic and dark', genre:'Dark Folk / Psych', feel:'Sweeping, melancholic', example:'Believer — Imagine Dragons / Numb — Linkin Park', degrees:['i','♭VI','♭III','♭VII'], steps:[0,8,3,10], minor:true, cat:'dark' },
+  { id:'I-III-IV-iv',     name:'I–III–IV–iv',      desc:'Major to parallel minor — bittersweet turn', genre:'Rock / Film', feel:'Bittersweet, cinematic', example:'Creep — Radiohead / In My Life — The Beatles', degrees:['I','III','IV','iv'], steps:[0,4,5,5], mixedQ:['major','major','major','minor'], cat:'dark' },
+  { id:'i-bII',            name:'i–♭II (Phrygian)', desc:'Half-step tension — ancient mystery', genre:'Flamenco / Dark Folk', feel:'Tense, unyielding', example:'White Zombie — More Human Than Human / Wherever I May Roam — Metallica', degrees:['i','♭II'], steps:[0,1], minor:true, cat:'dark' },
   // MODAL
-  { id:'dorian-i-IV',      name:'i–IV (Dorian)',    desc:'Dorian mode — minor with a raised 6th', genre:'Jazz / Folk / Rock', feel:'Soulful, spacious', degrees:['i','IV'], steps:[0,5], mixedQ:['minor','major'], cat:'modal' },
-  { id:'mixolydian',       name:'I–♭VII–IV',        desc:'Mixolydian — major with a flat 7', genre:'Folk / Rock / Celtic', feel:'Earthy, modal', degrees:['I','♭VII','IV'], steps:[0,10,5], cat:'modal' },
-  { id:'phrygian',         name:'i–♭II–♭VII',       desc:'Phrygian — dark and Eastern-tinged', genre:'Flamenco / World', feel:'Ancient, mysterious', degrees:['i','♭II','♭VII'], steps:[0,1,10], minor:true, cat:'modal' },
-  { id:'lydian',           name:'I–II (Lydian)',     desc:'Lydian — raised 4th creates ethereal ambiguity', genre:'Film / Ambient', feel:'Ethereal, floating', degrees:['I','II'], steps:[0,2], cat:'modal' },
+  { id:'dorian-i-IV',      name:'i–IV (Dorian)',    desc:'Dorian mode — minor with a raised 6th', genre:'Jazz / Folk / Rock', feel:'Soulful, spacious', example:'Oye Como Va — Santana / So What — Miles Davis / Scarborough Fair — Simon & Garfunkel', degrees:['i','IV'], steps:[0,5], mixedQ:['minor','major'], cat:'modal' },
+  { id:'mixolydian',       name:'I–♭VII–IV',        desc:'Mixolydian — major with a flat 7', genre:'Folk / Rock / Celtic', feel:'Earthy, modal', example:'Sweet Home Alabama — Lynyrd Skynyrd / Norwegian Wood — The Beatles', degrees:['I','♭VII','IV'], steps:[0,10,5], cat:'modal' },
+  { id:'phrygian',         name:'i–♭II–♭VII',       desc:'Phrygian — dark and Eastern-tinged', genre:'Flamenco / World', feel:'Ancient, mysterious', example:'White Rabbit — Jefferson Airplane / Wherever I May Roam — Metallica', degrees:['i','♭II','♭VII'], steps:[0,1,10], minor:true, cat:'modal' },
+  { id:'lydian',           name:'I–II (Lydian)',     desc:'Lydian — raised 4th creates ethereal ambiguity', genre:'Film / Ambient', feel:'Ethereal, floating', example:'The Simpsons Theme — Danny Elfman / Flying — The Beatles', degrees:['I','II'], steps:[0,2], cat:'modal' },
   // NEO-SOUL
-  { id:'ns-Imaj7-vi7-ii7-V9',   name:'Imaj7–vi7–ii7–V9',       desc:'The neo-soul lush loop — every chord extended', genre:'Neo-Soul / R&B', feel:'Lush, sophisticated, warm', degrees:['Imaj7','vi7','ii7','V9'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'neosoul' },
-  { id:'ns-Imaj9-IV9-iii7-VI9',  name:'Imaj9–IV9–iii7–VI9',     desc:'D\'Angelo/Erykah Badu pillars — stacked colour tones', genre:'Neo-Soul', feel:'Deep, warm, rolling', degrees:['Imaj9','IV9','iii7','VI9'], steps:[0,5,4,9], mixedQ:['maj7','dom7','min7','dom7'], cat:'neosoul' },
-  { id:'ns-i9-iv9-bVII9-bIII',   name:'i9–iv9–♭VII9–♭III',     desc:'Minor neo-soul pool — The Roots and common', genre:'Neo-Soul / Hip-Hop Soul', feel:'Brooding, deep', degrees:['i9','iv9','♭VII9','♭III'], steps:[0,5,10,3], mixedQ:['min7','min7','dom7','major'], cat:'neosoul' },
-  { id:'ns-ii7-V9-Imaj7-VI9',    name:'ii7–V9–Imaj7–VI9',       desc:'Jazz-soul turnaround — smooth and sophisticated', genre:'Neo-Soul / Jazz', feel:'Smooth, resolving, warm', degrees:['ii7','V9','Imaj7','VI9'], steps:[2,7,0,9], mixedQ:['min7','dom7','maj7','dom7'], cat:'neosoul' },
-  { id:'ns-Imaj7-III7-vi7-II9',  name:'Imaj7–III7–vi7–II9',     desc:'Neo-soul chromatic descent — cinematic movement', genre:'Neo-Soul / Soul-Jazz', feel:'Cinematic, lush', degrees:['Imaj7','III7','vi7','II9'], steps:[0,4,9,2], mixedQ:['maj7','dom7','min7','dom7'], cat:'neosoul' },
-  { id:'ns-vi7-ii7-V7-I6',       name:'vi7–ii7–V7–I6',          desc:'Circle-of-fourths soul loop — Stevie Wonder classic', genre:'Soul / Neo-Soul', feel:'Groove, cyclical', degrees:['vi7','ii7','V7','I6'], steps:[9,2,7,0], mixedQ:['min7','min7','dom7','maj7'], cat:'neosoul' },
+  { id:'ns-Imaj7-vi7-ii7-V9',   name:'Imaj7–vi7–ii7–V9',       desc:'The neo-soul lush loop — every chord extended', genre:'Neo-Soul / R&B', feel:'Lush, sophisticated, warm', example:'Isn\'t She Lovely — Stevie Wonder / Brown Sugar — D\'Angelo', degrees:['Imaj7','vi7','ii7','V9'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'neosoul' },
+  { id:'ns-Imaj9-IV9-iii7-VI9',  name:'Imaj9–IV9–iii7–VI9',     desc:'D\'Angelo/Erykah Badu pillars — stacked colour tones', genre:'Neo-Soul', feel:'Deep, warm, rolling', example:'The Signature — D\'Angelo / Tyrone — Erykah Badu', degrees:['Imaj9','IV9','iii7','VI9'], steps:[0,5,4,9], mixedQ:['maj7','dom7','min7','dom7'], cat:'neosoul' },
+  { id:'ns-i9-iv9-bVII9-bIII',   name:'i9–iv9–♭VII9–♭III',     desc:'Minor neo-soul pool — The Roots and common', genre:'Neo-Soul / Hip-Hop Soul', feel:'Brooding, deep', example:'You Got Me — The Roots / These Walls — Kendrick Lamar', degrees:['i9','iv9','♭VII9','♭III'], steps:[0,5,10,3], mixedQ:['min7','min7','dom7','major'], cat:'neosoul' },
+  { id:'ns-ii7-V9-Imaj7-VI9',    name:'ii7–V9–Imaj7–VI9',       desc:'Jazz-soul turnaround — smooth and sophisticated', genre:'Neo-Soul / Jazz', feel:'Smooth, resolving, warm', example:'Just the Two of Us — Grover Washington Jr. / Knocks Me Off My Feet — Stevie Wonder', degrees:['ii7','V9','Imaj7','VI9'], steps:[2,7,0,9], mixedQ:['min7','dom7','maj7','dom7'], cat:'neosoul' },
+  { id:'ns-Imaj7-III7-vi7-II9',  name:'Imaj7–III7–vi7–II9',     desc:'Neo-soul chromatic descent — cinematic movement', genre:'Neo-Soul / Soul-Jazz', feel:'Cinematic, lush', example:'Overjoyed — Stevie Wonder / Until the End of Time — D\'Angelo', degrees:['Imaj7','III7','vi7','II9'], steps:[0,4,9,2], mixedQ:['maj7','dom7','min7','dom7'], cat:'neosoul' },
+  { id:'ns-vi7-ii7-V7-I6',       name:'vi7–ii7–V7–I6',          desc:'Circle-of-fourths soul loop — Stevie Wonder classic', genre:'Soul / Neo-Soul', feel:'Groove, cyclical', example:'Isn\'t She Lovely — Stevie Wonder / My Cherie Amour — Stevie Wonder', degrees:['vi7','ii7','V7','I6'], steps:[9,2,7,0], mixedQ:['min7','min7','dom7','maj7'], cat:'neosoul' },
+  // BLUES
+  { id:'blues-12bar',     name:'12-Bar Blues',          desc:'The foundational form of the blues — I, IV, V in a 12-bar cycle', genre:'Blues / Rock', feel:'Raw, soulful, grounded', example:'Sweet Home Chicago — Robert Johnson / Pride and Joy — Stevie Ray Vaughan', degrees:['I7','I7','I7','I7','IV7','IV7','I7','I7','V7','IV7','I7','V7'], steps:[0,0,0,0,5,5,0,0,7,5,0,7], mixedQ:['dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7'], cat:'blues' },
+  { id:'blues-minor',     name:'Minor Blues',            desc:'Natural minor over a blues form — darker, more soulful', genre:'Blues / Soul', feel:'Dark, heavy, soulful', example:'The Thrill Is Gone — B.B. King / Since I\'ve Been Loving You — Led Zeppelin', degrees:['i7','i7','i7','i7','iv7','iv7','i7','i7','v7','iv7','i7','v7'], steps:[0,0,0,0,5,5,0,0,7,5,0,7], mixedQ:['min7','min7','min7','min7','min7','min7','min7','min7','min7','min7','min7','min7'], cat:'blues' },
+  { id:'blues-quick',     name:'Quick-Change Blues',     desc:'IV chord appears in bar 2 for extra early motion', genre:'Blues / Jump Jazz', feel:'Bouncy, driving', example:'Everyday I Have the Blues — B.B. King / Mannish Boy — Muddy Waters', degrees:['I7','IV7','I7','I7','IV7','IV7','I7','I7','V7','IV7','I7','V7'], steps:[0,5,0,0,5,5,0,0,7,5,0,7], mixedQ:['dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7'], cat:'blues' },
+  // GOSPEL
+  { id:'gospel-I-IV-I-V', name:'I–IV–I–V (Gospel)',     desc:'Gospel staple — simple, powerful, full of the Spirit', genre:'Gospel / Soul', feel:'Uplifting, devotional, powerful', example:'Oh Happy Day — Edwin Hawkins / Amazing Grace (trad.)', degrees:['I','IV','I','V'], steps:[0,5,0,7], cat:'gospel' },
+  { id:'gospel-plagal',   name:'IV–I (Plagal "Amen")',   desc:'The Amen cadence — resolution through the subdominant, timeless in church music', genre:'Gospel / Hymn', feel:'Sacred, resolved, open', example:'Amen (trad.) / Lean on Me — Bill Withers', degrees:['IV','I'], steps:[0,5], cat:'gospel' },
+  { id:'gospel-bVII-IV-I',name:'I–♭VII–IV–I (Gospel)',  desc:'Soul-gospel lift — the borrowed ♭VII adds a jubilant modal flavour', genre:'Gospel / R&B', feel:'Jubilant, soulful, lifted', example:'I\'ll Take You There — Staple Singers / Higher Ground — Stevie Wonder', degrees:['I','♭VII','IV','I'], steps:[0,10,5,0], cat:'gospel' },
+  { id:'gospel-I-IV-vim', name:'I–IV–vi–♭VII',          desc:'Neo-gospel arc — major foundation with a melancholic vi before the modal ♭VII lift', genre:'Gospel Soul / Neo-Soul', feel:'Bittersweet, soulful, cinematic', example:'A Change Is Gonna Come — Sam Cooke / If You Don\'t Know Me By Now — Harold Melvin', degrees:['I','IV','vi','♭VII'], steps:[0,5,9,10], cat:'gospel' },
+  // LATIN
+  { id:'latin-bossa',     name:'Bossa Nova (Imaj7–♭IImaj7)', desc:'The classic bossa nova chromatic slide — one of the most beautiful chord movements in any genre', genre:'Bossa Nova / Latin Jazz', feel:'Languid, sophisticated, warm', example:'Girl from Ipanema — Jobim / Corcovado — Jobim', degrees:['Imaj7','♭IImaj7','Imaj7'], steps:[0,1,0], mixedQ:['maj7','maj7','maj7'], cat:'latin' },
+  { id:'latin-flamenco',  name:'Flamenco (i–♭VII–♭VI–V)', desc:'Andalusian cadence with a major V — Flamenco\'s most iconic descending sequence', genre:'Flamenco / Latin', feel:'Dramatic, fiery, ancient', example:'Malagueña (trad.) / Malaguena — Connie Francis', degrees:['i','♭VII','♭VI','V'], steps:[0,10,8,7], mixedQ:['minor','major','major','major'], cat:'latin' },
+  { id:'latin-salsa',     name:'Salsa (i–iv–V–i)',       desc:'The minor tumbao foundation of salsa and son — driving and cyclical', genre:'Salsa / Son / Latin', feel:'Driving, rhythmic, hot', example:'Oye Como Va — Tito Puente / Celia Cruz — La Negra Tiene Tumbao', degrees:['i','iv','V','i'], steps:[0,5,7,0], mixedQ:['minor','minor','major','minor'], cat:'latin' },
 ];
 
 // ── TAB 3: JAZZ CHORDS ──────────────────────────────────────────
@@ -1137,16 +1485,10 @@ function renderChords() {
     ).join('');
   }
 
-  // Rebuild chord cards
   const grid = document.getElementById('chordsGrid');
   grid.innerHTML = '';
-  voicings.forEach((v, i) => {
-    // Apply capo: shift all fretted notes down by capo amount so open shapes show at real fret positions
-    const displayVoicing = capo > 0
-      ? v.voicing.map(f => f === null ? null : f === 0 ? capo : f)
-      : v.voicing;
-    const displayBaseFret = capo > 0 ? Math.max(capo, v.baseFret === 1 ? capo : v.baseFret) : v.baseFret;
 
+  voicings.forEach((v, i) => {
     const card = document.createElement('div');
     card.className = `chord-card${i===selectedChordIdx?' selected':''}`;
     card.innerHTML = `
@@ -1155,61 +1497,72 @@ function renderChords() {
       <div class="fret-pos-label">${formatPos(v.baseFret, v.voicing)}${capo>0?' (capo '+capo+')':''}</div>
       ${buildFretboardSVG(v.voicing, v.baseFret)}
     `;
-    card.onclick = () => { selectedChordIdx=i; showChordDetail(v); renderChordsGrid(); };
+    card.onclick = () => {
+      const prev = selectedChordIdx;
+      selectedChordIdx = i;
+      // Toggle off if same card tapped again
+      if (prev === i && document.querySelector('.chord-detail-inline')) {
+        selectedChordIdx = -1;
+        renderChords();
+        return;
+      }
+      renderChords();
+    };
     grid.appendChild(card);
+
+    // After the selected card, inject the inline detail panel spanning full width
+    if (i === selectedChordIdx) {
+      const detail = document.createElement('div');
+      detail.className = 'chord-detail-inline';
+      detail.id = 'chordsDetail';
+      detail.dataset.lastChord = detail.dataset.lastChord || '';
+      grid.appendChild(detail);
+      showChordDetail(v);
+    }
   });
 
-  showChordDetail(voicings[selectedChordIdx]||voicings[0]);
   updateDrawerLabel();
 }
 
 function renderChordsGrid() {
-  // Re-render just the grid selection state without rebuilding pills
-  const q = currentQuality;
-  const voicings = getChordsForRoot(currentRoot, q);
-  const grid = document.getElementById('chordsGrid');
-  grid.querySelectorAll('.chord-card').forEach((card, i) => {
-    card.classList.toggle('selected', i===selectedChordIdx);
-  });
-  showChordDetail(voicings[selectedChordIdx]||voicings[0]);
+  // Full re-render handles both selection state and inline detail
+  renderChords();
 }
 
 function showChordDetail(v) {
   const panel = document.getElementById('chordsDetail');
+  if (!panel) return;
   const qNames = { major:'Major', minor:'Minor', dom7:'Dom 7', maj7:'Maj 7', min7:'Min 7', sus2:'Sus2' };
   const chordName = `${currentRoot}${qNames[currentQuality]||currentQuality}`;
   const favId = `chord-${currentRoot}-${currentQuality}-${v.pos||v.label}`;
   const favData = { name: currentRoot, label: v.label, voicing: v.voicing, baseFret: v.baseFret, fingers: v.fingers, tips: v.tips, source: 'chords' };
 
-  // Capo info
   let capoNote = '';
   if (capo > 0) {
     const soundRoot = NOTES[(NOTES.indexOf(currentRoot) + capo) % 12];
     capoNote = `<div class="meta-item"><span class="meta-label">Sounds As</span><span class="meta-value" style="color:var(--amber)">${soundRoot} ${qNames[currentQuality]||currentQuality}</span></div>`;
   }
 
-  // Previous chord name for transition tip
   const prevChord = panel.dataset.lastChord || '';
-  const tip = prevChord ? getTransitionTip(prevChord, chordName) : null;
+  const tip = prevChord && prevChord !== chordName ? getTransitionTip(prevChord, chordName) : null;
   const transitionHtml = tip ? `<div class="transition-tip"><strong>Transition from ${prevChord}:</strong> ${tip}</div>` : '';
 
   panel.innerHTML = `
-    <div class="detail-panel" style="position:relative;">
-      <div class="detail-eyebrow">Selected voicing</div>
-      <div class="detail-title">${chordName} — ${v.label}</div>
-      <div class="detail-meta">
-        <div class="meta-item"><span class="meta-label">Fingering</span><span class="meta-value">${v.fingers}</span></div>
-        <div class="meta-item"><span class="meta-label">Position</span><span class="meta-value">${formatPos(v.baseFret, v.voicing)}</span></div>
-        ${capoNote}
-      </div>
-      <div class="tips-box"><strong>Playing Tip:</strong> ${v.tips}</div>
-      ${transitionHtml}
-      <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
-        ${addStrumBtn(v.voicing, v.baseFret)}
-        <button class="strum-btn" style="border-color:${isFav(favId)?'var(--gold-light)':'var(--border)'};color:${isFav(favId)?'var(--gold-light)':'var(--muted)'}" onclick="toggleFav('${favId}',${JSON.stringify(favData).replace(/"/g,"'")})">
-          ${isFav(favId) ? '♥ Saved' : '♡ Save'}
-        </button>
-      </div>
+    <button class="chord-detail-close" onclick="selectedChordIdx=-1;renderChords()" title="Close">✕</button>
+    <div class="detail-eyebrow">Selected voicing</div>
+    <div class="detail-title">${chordName} — ${v.label}</div>
+    <div class="detail-meta">
+      <div class="meta-item"><span class="meta-label">Fingering</span><span class="meta-value">${v.fingers}</span></div>
+      <div class="meta-item"><span class="meta-label">Position</span><span class="meta-value">${formatPos(v.baseFret, v.voicing)}</span></div>
+      ${capoNote}
+    </div>
+    <div class="tips-box"><strong>Playing Tip:</strong> ${v.tips}</div>
+    ${transitionHtml}
+    <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;margin-top:0.75rem;">
+      ${addStrumBtn(v.voicing, v.baseFret)}
+      <button class="strum-btn" style="border-color:${isFav(favId)?'var(--gold-light)':'var(--border)'};color:${isFav(favId)?'var(--gold-light)':'var(--muted)'}" onclick="toggleFav('${favId}',${JSON.stringify(favData).replace(/"/g,"'")})">
+        ${isFav(favId) ? '♥ Saved' : '♡ Save'}
+      </button>
     </div>`;
   panel.dataset.lastChord = chordName;
 }
@@ -1281,6 +1634,7 @@ function renderProgressions() {
     cardDiv.innerHTML = `
       <div class="prog-card-name">${prog.name}</div>
       <div class="prog-card-meta">${prog.genre} · ${prog.feel}</div>
+      ${prog.example ? `<div style="font-size:0.72rem;color:var(--muted);font-style:italic;margin-top:0.2rem;font-family:'Crimson Pro',serif">♪ ${prog.example}</div>` : ''}
       <span class="cat-tag tag-${prog.cat}">${prog.cat==='neosoul'?'Neo-Soul':prog.cat.charAt(0).toUpperCase()+prog.cat.slice(1)}</span>
     `;
     cardDiv.onclick = () => { currentProgId=prog.id; renderProgressions(); closeDrawer(); };
@@ -1306,13 +1660,19 @@ function renderProgressions() {
       const tip = `<div class="tips-box" style="margin-bottom:0.85rem">
         <strong>${prog.name}</strong> — ${prog.desc}. Feel: <em>${prog.feel}</em>.<br>
         In <strong>${key}</strong>: ${chords.map(c=>c.name).join(' → ')}
+        ${prog.example ? `<br><span style="color:var(--gold-light);font-size:0.9rem">♪ ${prog.example}</span>` : ''}
       </div>`;
 
       // Get voicings per chord
       const allV = getVoicingsForChords(chords);
-      const diagHtml = `<div class="section-label" style="margin-bottom:0.6rem">Chord Voicings</div>
-        <div class="prog-diagrams">${allV.map(({c,v})=>`
-          <div class="chord-card">
+
+      // Build a unique ID for this progression's play button
+      const progPlayId = `play-${prog.id}`;
+
+      const diagHtml = `
+        ${buildPlaybackBar(allV.map(x=>x.v.voicing), allV.map(x=>x.v.baseFret), progPlayId)}
+        <div class="prog-diagrams" id="diag-${prog.id}">${allV.map(({c,v},idx)=>`
+          <div class="chord-card" data-chord-idx="${idx}">
             <div class="card-name">${c.name}</div>
             <div class="card-label">${c.degree} · ${v.baseFret<=1?'Open':'Fret '+v.baseFret}</div>
             ${buildFretboardSVG(v.voicing, v.baseFret)}
@@ -1612,29 +1972,36 @@ function showNeoDetail(chord, v, name) {
 // ════════════════════════════════════════════════════════════════
 const JAZZ_PROGRESSIONS = [
   // STANDARDS
-  { id:'j-ii-V-I-maj',    name:'ii7–V7–Imaj7',          desc:'The fundamental jazz cadence — the DNA of tonal jazz harmony', genre:'Jazz Standard', feel:'Resolving, sophisticated', degrees:['ii7','V7','Imaj7'], steps:[2,7,0], mixedQ:['min7','dom7','maj7'], cat:'standards' },
-  { id:'j-ii-V-I-min',    name:'ii∅–V7b9–im7',          desc:'Minor ii–V–i — darker, more cinematic than its major counterpart', genre:'Jazz / Film Noir', feel:'Tense, dark, resolving', degrees:['iiø','V7♭9','im7'], steps:[2,7,0], mixedQ:['min7','dom7','min7'], cat:'minor' },
-  { id:'j-rhythm-changes', name:'I–vi–ii–V (Rhythm Changes)', desc:'The A-section of Gershwin\'s "I Got Rhythm" — cornerstone of bebop', genre:'Bebop / Swing', feel:'Swinging, cyclical, bright', degrees:['Imaj7','vi7','ii7','V7'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'standards' },
-  { id:'j-I-VI-ii-V',     name:'Imaj7–VI7–ii7–V7',      desc:'The jazz turnaround with a secondary dominant VI7 — the "Coltrane" pivot', genre:'Jazz Standard', feel:'Rolling, smooth', degrees:['Imaj7','VI7','ii7','V7'], steps:[0,9,2,7], mixedQ:['maj7','dom7','min7','dom7'], cat:'standards' },
-  { id:'j-bird-blues',    name:'Jazz Blues (12-bar)',    desc:'Charlie Parker\'s jazz blues form — bebop harmony over a 12-bar skeleton', genre:'Bebop Blues', feel:'Swinging, bluesy, sophisticated', degrees:['I7','IV7','I7','VI7','ii7','V7','I7','V7'], steps:[0,5,0,9,2,7,0,7], mixedQ:['dom7','dom7','dom7','dom7','min7','dom7','dom7','dom7'], cat:'blues' },
-  { id:'j-autumn-changes', name:'I–♭VII7–♭III–♭VII7',  desc:'A classic "Autumn Leaves" style changes — circle of fifths through borrowed chords', genre:'Jazz Ballad', feel:'Autumnal, melancholic, lyrical', degrees:['Imaj7','IV7','♭VIImaj7','♭VII7'], steps:[0,5,10,10], mixedQ:['maj7','dom7','maj7','dom7'], cat:'standards' },
-  { id:'j-giant-steps',   name:'Imaj7–III7–VImaj7–I7',  desc:'Coltrane\'s "Giant Steps" substitution cycle — three tonal centres a major 3rd apart', genre:'Post-Bop', feel:'Dizzying, dramatic, modern', degrees:['Imaj7','III7','VImaj7','I7'], steps:[0,4,9,0], mixedQ:['maj7','dom7','maj7','dom7'], cat:'standards' },
+  { id:'j-ii-V-I-maj',    name:'ii7–V7–Imaj7',          desc:'The fundamental jazz cadence — the DNA of tonal jazz harmony', genre:'Jazz Standard', feel:'Resolving, sophisticated', example:'Autumn Leaves — Miles Davis / There Will Never Be Another You — standard', degrees:['ii7','V7','Imaj7'], steps:[2,7,0], mixedQ:['min7','dom7','maj7'], cat:'standards' },
+  { id:'j-ii-V-I-min',    name:'ii∅–V7b9–im7',          desc:'Minor ii–V–i — darker, more cinematic than its major counterpart', genre:'Jazz / Film Noir', feel:'Tense, dark, resolving', example:'Summertime — Miles Davis / My Funny Valentine — Chet Baker', degrees:['iiø','V7♭9','im7'], steps:[2,7,0], mixedQ:['min7','dom7','min7'], cat:'standards' },
+  { id:'j-rhythm-changes', name:'I–vi–ii–V (Rhythm Changes)', desc:'The A-section of Gershwin\'s "I Got Rhythm" — cornerstone of bebop', genre:'Bebop / Swing', feel:'Swinging, cyclical, bright', example:'Anthropology — Charlie Parker / Oleo — Sonny Rollins', degrees:['Imaj7','vi7','ii7','V7'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'standards' },
+  { id:'j-I-VI-ii-V',     name:'Imaj7–VI7–ii7–V7',      desc:'The jazz turnaround with a secondary dominant VI7 — the "Coltrane" pivot', genre:'Jazz Standard', feel:'Rolling, smooth', example:'All the Things You Are — Jerome Kern / The Lady is a Tramp — Rodgers & Hart', degrees:['Imaj7','VI7','ii7','V7'], steps:[0,9,2,7], mixedQ:['maj7','dom7','min7','dom7'], cat:'standards' },
+  { id:'j-bird-blues',    name:'Jazz Blues (12-bar)',    desc:'Charlie Parker\'s jazz blues form — bebop harmony over a 12-bar skeleton', genre:'Bebop Blues', feel:'Swinging, bluesy, sophisticated', example:'Now\'s the Time — Charlie Parker / Billie\'s Bounce — Charlie Parker', degrees:['I7','IV7','I7','VI7','ii7','V7','I7','V7'], steps:[0,5,0,9,2,7,0,7], mixedQ:['dom7','dom7','dom7','dom7','min7','dom7','dom7','dom7'], cat:'blues' },
+  { id:'j-autumn-changes', name:'I–♭VII7–♭III–♭VII7',  desc:'A classic "Autumn Leaves" style changes — circle of fifths through borrowed chords', genre:'Jazz Ballad', feel:'Autumnal, melancholic, lyrical', example:'Autumn Leaves — Joseph Kosma / Moon River — Henry Mancini', degrees:['Imaj7','IV7','♭VIImaj7','♭VII7'], steps:[0,5,10,10], mixedQ:['maj7','dom7','maj7','dom7'], cat:'standards' },
+  { id:'j-giant-steps',   name:'Imaj7–III7–VImaj7–I7',  desc:'Coltrane\'s "Giant Steps" substitution cycle — three tonal centres a major 3rd apart', genre:'Post-Bop', feel:'Dizzying, dramatic, modern', example:'Giant Steps — John Coltrane / Countdown — John Coltrane', degrees:['Imaj7','III7','VImaj7','I7'], steps:[0,4,9,0], mixedQ:['maj7','dom7','maj7','dom7'], cat:'standards' },
   // MINOR
-  { id:'j-minor-turnaround', name:'im7–♭VImaj7–ii∅–V7♭9', desc:'Minor key turnaround — complete minor cadence with half-diminished ii', genre:'Jazz / Bossa Nova', feel:'Dark, Latin-tinged, elegant', degrees:['im7','♭VImaj7','ii∅','V7♭9'], steps:[0,8,2,7], mixedQ:['min7','maj7','min7','dom7'], cat:'minor' },
-  { id:'j-dorian-vamp',   name:'im7–IV7 (Dorian)',       desc:'Modal Dorian vamp — Miles Davis "So What" style, minor with a raised 6th', genre:'Modal Jazz', feel:'Open, spacious, modal', degrees:['im7','IV7'], steps:[0,5], mixedQ:['min7','dom7'], cat:'modal' },
-  { id:'j-minor-blues',   name:'im7–iv7–♭VII7–♭III',    desc:'Minor blues — slow, deep and soulful. Monk and Miles territory', genre:'Jazz Blues', feel:'Heavy, soulful, dark', degrees:['im7','iv7','♭VII7','♭III'], steps:[0,5,10,3], mixedQ:['min7','min7','dom7','maj7'], cat:'blues' },
-  { id:'j-in-a-sentimental', name:'♭VImaj7–V7–im7–iv7', desc:'Descending minor cadence — "In a Sentimental Mood" style voice leading', genre:'Jazz Ballad', feel:'Wistful, descending, tender', degrees:['♭VImaj7','V7','im7','iv7'], steps:[8,7,0,5], mixedQ:['maj7','dom7','min7','min7'], cat:'minor' },
+  { id:'j-minor-turnaround', name:'im7–♭VImaj7–ii∅–V7♭9', desc:'Minor key turnaround — complete minor cadence with half-diminished ii', genre:'Jazz / Bossa Nova', feel:'Dark, Latin-tinged, elegant', example:'Black Orpheus (Manhã de Carnaval) / Autumn Leaves (minor section)', degrees:['im7','♭VImaj7','ii∅','V7♭9'], steps:[0,8,2,7], mixedQ:['min7','maj7','min7','dom7'], cat:'minor' },
+  { id:'j-dorian-vamp',   name:'im7–IV7 (Dorian)',       desc:'Modal Dorian vamp — Miles Davis "So What" style, minor with a raised 6th', genre:'Modal Jazz', feel:'Open, spacious, modal', example:'So What — Miles Davis / Milestones — Miles Davis', degrees:['im7','IV7'], steps:[0,5], mixedQ:['min7','dom7'], cat:'modal' },
+  { id:'j-minor-blues',   name:'im7–iv7–♭VII7–♭III',    desc:'Minor blues — slow, deep and soulful. Monk and Miles territory', genre:'Jazz Blues', feel:'Heavy, soulful, dark', example:'Equinox — John Coltrane / Mr. P.C. — John Coltrane', degrees:['im7','iv7','♭VII7','♭III'], steps:[0,5,10,3], mixedQ:['min7','min7','dom7','maj7'], cat:'blues' },
+  { id:'j-in-a-sentimental', name:'♭VImaj7–V7–im7–iv7', desc:'Descending minor cadence — "In a Sentimental Mood" style voice leading', genre:'Jazz Ballad', feel:'Wistful, descending, tender', example:'In a Sentimental Mood — Duke Ellington / Naima — John Coltrane', degrees:['♭VImaj7','V7','im7','iv7'], steps:[8,7,0,5], mixedQ:['maj7','dom7','min7','min7'], cat:'minor' },
   // MODAL
-  { id:'j-so-what',       name:'im7–♭IImaj7 (Phrygian)', desc:'"So What" / Phrygian modal — two chords a half step apart', genre:'Modal Jazz', feel:'Floating, mysterious, modal', degrees:['im7','♭IImaj7'], steps:[0,1], mixedQ:['min7','maj7'], cat:'modal' },
-  { id:'j-impressionist', name:'Imaj7–II7–Imaj7–♭VII7',  desc:'Lydian dominant colours — floating, impressionistic harmony', genre:'Jazz / Impressionism', feel:'Ethereal, floating, colourful', degrees:['Imaj7','II7','Imaj7','♭VII7'], steps:[0,2,0,10], mixedQ:['maj7','dom7','maj7','dom7'], cat:'modal' },
-  { id:'j-coltrane-changes', name:'Imaj7–♭IIImaj7–♭VImaj7', desc:'Coltrane substitution — three major 7ths a minor 3rd apart, symmetric', genre:'Post-Bop / Modern', feel:'Symmetrical, dramatic, modern', degrees:['Imaj7','♭IIImaj7','♭VImaj7'], steps:[0,3,8], mixedQ:['maj7','maj7','maj7'], cat:'modal' },
+  { id:'j-so-what',       name:'im7–♭IImaj7 (Phrygian)', desc:'"So What" / Phrygian modal — two chords a half step apart', genre:'Modal Jazz', feel:'Floating, mysterious, modal', example:'So What — Miles Davis / Impressions — John Coltrane', degrees:['im7','♭IImaj7'], steps:[0,1], mixedQ:['min7','maj7'], cat:'modal' },
+  { id:'j-impressionist', name:'Imaj7–II7–Imaj7–♭VII7',  desc:'Lydian dominant colours — floating, impressionistic harmony', genre:'Jazz / Impressionism', feel:'Ethereal, floating, colourful', example:'Peace Piece — Bill Evans / Maiden Voyage (intro) — Herbie Hancock', degrees:['Imaj7','II7','Imaj7','♭VII7'], steps:[0,2,0,10], mixedQ:['maj7','dom7','maj7','dom7'], cat:'modal' },
+  { id:'j-coltrane-changes', name:'Imaj7–♭IIImaj7–♭VImaj7', desc:'Coltrane substitution — three major 7ths a minor 3rd apart, symmetric', genre:'Post-Bop / Modern', feel:'Symmetrical, dramatic, modern', example:'Giant Steps — John Coltrane / Countdown — John Coltrane', degrees:['Imaj7','♭IIImaj7','♭VImaj7'], steps:[0,3,8], mixedQ:['maj7','maj7','maj7'], cat:'modal' },
   // TURNAROUND
-  { id:'j-I-VI-IV-II',    name:'Imaj7–VI7–IVmaj7–II7',  desc:'Extended turnaround — circle of fifths through four chords', genre:'Swing / Bop', feel:'Circular, swinging, propulsive', degrees:['Imaj7','VI7','IVmaj7','II7'], steps:[0,9,5,2], mixedQ:['maj7','dom7','maj7','dom7'], cat:'turnaround' },
-  { id:'j-tritone-loop',  name:'Imaj7–♭II7–Imaj7–V7',   desc:'Tritone substitution loop — chromatic bass motion into resolution', genre:'Jazz / Post-Bop', feel:'Chromatic, sophisticated', degrees:['Imaj7','♭II7 (tritone)','Imaj7','V7'], steps:[0,1,0,7], mixedQ:['maj7','dom7','maj7','dom7'], cat:'turnaround' },
-  { id:'j-contrafact',    name:'I7–IV7–♭VII7–♭III7',    desc:'Contrafact turnaround — descending dominant 7ths a 4th apart', genre:'Bebop', feel:'Bebop, fast, angular', degrees:['I7','IV7','♭VII7','♭III7'], steps:[0,5,10,3], mixedQ:['dom7','dom7','dom7','dom7'], cat:'turnaround' },
+  { id:'j-I-VI-IV-II',    name:'Imaj7–VI7–IVmaj7–II7',  desc:'Extended turnaround — circle of fifths through four chords', genre:'Swing / Bop', feel:'Circular, swinging, propulsive', example:'All the Things You Are — Jerome Kern / Cherokee — Ray Noble', degrees:['Imaj7','VI7','IVmaj7','II7'], steps:[0,9,5,2], mixedQ:['maj7','dom7','maj7','dom7'], cat:'turnaround' },
+  { id:'j-tritone-loop',  name:'Imaj7–♭II7–Imaj7–V7',   desc:'Tritone substitution loop — chromatic bass motion into resolution', genre:'Jazz / Post-Bop', feel:'Chromatic, sophisticated', example:'Joy Spring — Clifford Brown / Confirmation — Charlie Parker', degrees:['Imaj7','♭II7 (tritone)','Imaj7','V7'], steps:[0,1,0,7], mixedQ:['maj7','dom7','maj7','dom7'], cat:'turnaround' },
+  { id:'j-contrafact',    name:'I7–IV7–♭VII7–♭III7',    desc:'Contrafact turnaround — descending dominant 7ths a 4th apart', genre:'Bebop', feel:'Bebop, fast, angular', example:'Half Nelson — Miles Davis / Donna Lee — Charlie Parker', degrees:['I7','IV7','♭VII7','♭III7'], steps:[0,5,10,3], mixedQ:['dom7','dom7','dom7','dom7'], cat:'turnaround' },
   // BLUES
-  { id:'j-quick-change',  name:'I7–IV7–I7–V7–IV7–I7',   desc:'Quick-change blues — IV chord appears in bar 2 for extra motion', genre:'Blues / Jump Jazz', feel:'Bouncy, driving, classic', degrees:['I7','IV7','I7','V7','IV7','I7'], steps:[0,5,0,7,5,0], mixedQ:['dom7','dom7','dom7','dom7','dom7','dom7'], cat:'blues' },
-  { id:'j-bebop-blues',   name:'I7–IV7–ii7–V7 (Bop Blues)', desc:'Bebop blues with ii–V in bars 9–10 — Parker/Dizzy vocabulary', genre:'Bebop', feel:'Sophisticated, swinging', degrees:['I7','IV7','ii7','V7'], steps:[0,5,2,7], mixedQ:['dom7','dom7','min7','dom7'], cat:'blues' },
+  { id:'j-quick-change',  name:'I7–IV7–I7–V7–IV7–I7',   desc:'Quick-change blues — IV chord appears in bar 2 for extra motion', genre:'Blues / Jump Jazz', feel:'Bouncy, driving, classic', example:'Everyday I Have the Blues — B.B. King / Mannish Boy — Muddy Waters', degrees:['I7','IV7','I7','V7','IV7','I7'], steps:[0,5,0,7,5,0], mixedQ:['dom7','dom7','dom7','dom7','dom7','dom7'], cat:'blues' },
+  { id:'j-bebop-blues',   name:'I7–IV7–ii7–V7 (Bop Blues)', desc:'Bebop blues with ii–V in bars 9–10 — Parker/Dizzy vocabulary', genre:'Bebop', feel:'Sophisticated, swinging', example:'Billie\'s Bounce — Charlie Parker / Tenor Madness — Sonny Rollins', degrees:['I7','IV7','ii7','V7'], steps:[0,5,2,7], mixedQ:['dom7','dom7','min7','dom7'], cat:'blues' },
+  // LATIN JAZZ
+  { id:'j-bossa-nova',    name:'Bossa Nova (Imaj7–♭IImaj7)', desc:'The Jobim chromatic slide — Brazil\'s greatest harmonic gift to the world', genre:'Bossa Nova / Latin Jazz', feel:'Languid, sophisticated, tropical', example:'Girl from Ipanema — Jobim / Corcovado — Jobim / Wave — Jobim', degrees:['Imaj7','♭IImaj7','Imaj7'], steps:[0,1,0], mixedQ:['maj7','maj7','maj7'], cat:'latin' },
+  { id:'j-besame',        name:'i–♭VI–♭III–V (Bolero)',  desc:'Bésame Mucho changes — rich Spanish-influenced minor harmony', genre:'Bolero / Latin Jazz', feel:'Romantic, lush, Spanish', example:'Bésame Mucho (trad.) / My Romance — Rodgers & Hart', degrees:['im7','♭VImaj7','♭IIImaj7','V7'], steps:[0,8,3,7], mixedQ:['min7','maj7','maj7','dom7'], cat:'latin' },
+  { id:'j-samba',         name:'I9–IV9–V9 (Samba)',      desc:'Samba harmonic foundation — dominant 9th chords with rhythmic drive', genre:'Samba / Latin Jazz', feel:'Bright, rhythmic, Brazilian', example:'Mas Que Nada — Jorge Ben / Aquarela do Brasil — Ary Barroso', degrees:['I9','IV9','V9'], steps:[0,5,7], mixedQ:['dom7','dom7','dom7'], cat:'latin' },
+  // BALLAD
+  { id:'j-ballad-body',   name:'I–vi–ii–V (Ballad)',     desc:'Body and Soul style — the foundational slow ballad movement in jazz', genre:'Jazz Ballad', feel:'Tender, searching, intimate', example:'Body and Soul — Coleman Hawkins / The Very Thought of You — Ray Noble', degrees:['Imaj7','vi7','ii7','V7'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'ballad' },
+  { id:'j-ballad-misty',  name:'Imaj7–V7–iii7–VI7 (Misty)', desc:'"Misty" style — the slow walk through secondary dominants, each chord a surprise', genre:'Jazz Ballad', feel:'Romantic, yearning, lush', example:'Misty — Erroll Garner / My Way — Frank Sinatra', degrees:['Imaj7','V7','iii7','VI7'], steps:[0,7,4,9], mixedQ:['maj7','dom7','min7','dom7'], cat:'ballad' },
 ];
 
 // ════════════════════════════════════════════════════════════════
@@ -1642,28 +2009,36 @@ const JAZZ_PROGRESSIONS = [
 // ════════════════════════════════════════════════════════════════
 const NEO_PROGRESSIONS = [
   // LUSH
-  { id:'ns-lush-1', name:'Imaj9–vi9–ii9–V9',          desc:'The quintessential neo-soul loop — all chords extended to the 9th. D\'Angelo, Erykah Badu', genre:'Neo-Soul', feel:'Lush, warm, circular', degrees:['Imaj9','vi9','ii9','V9'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'lush' },
-  { id:'ns-lush-2', name:'Imaj9–♭VIImaj9–IV9–V9',    desc:'Major 7ths with the borrowed ♭VII — Frank Ocean, Solange sonic palette', genre:'Neo-Soul / Alternative R&B', feel:'Dreamy, rich, cinematic', degrees:['Imaj9','♭VIImaj9','IV9','V9'], steps:[0,10,5,7], mixedQ:['maj7','maj7','dom7','dom7'], cat:'lush' },
-  { id:'ns-lush-3', name:'Imaj7–iii7–vi9–ii9',        desc:'All-diatonic lush loop — stays in key but luxuriates in extensions', genre:'Neo-Soul / Soul-Jazz', feel:'Warm, smooth, timeless', degrees:['Imaj7','iii7','vi9','ii9'], steps:[0,4,9,2], mixedQ:['maj7','min7','min7','min7'], cat:'lush' },
-  { id:'ns-lush-4', name:'♭VImaj7–♭VIImaj7–Imaj9',   desc:'Two-chord slide into the I — floating, hymnal resolution. Lauryn Hill style', genre:'Neo-Soul / Gospel Soul', feel:'Uplifting, sacred, lush', degrees:['♭VImaj7','♭VIImaj7','Imaj9'], steps:[8,10,0], mixedQ:['maj7','maj7','maj7'], cat:'lush' },
-  { id:'ns-lush-5', name:'IVmaj9–iii7–ii9–Imaj7',    desc:'Descending diatonic lush — each chord steps down, classic Stevie Wonder movement', genre:'Soul / Neo-Soul', feel:'Descending, warm, nostalgic', degrees:['IVmaj9','iii7','ii9','Imaj7'], steps:[5,4,2,0], mixedQ:['maj7','min7','min7','maj7'], cat:'lush' },
+  { id:'ns-lush-1', name:'Imaj9–vi9–ii9–V9',          desc:'The quintessential neo-soul loop — all chords extended to the 9th. D\'Angelo, Erykah Badu', genre:'Neo-Soul', feel:'Lush, warm, circular', example:'Isn\'t She Lovely — Stevie Wonder / Untitled (How Does It Feel) — D\'Angelo', degrees:['Imaj9','vi9','ii9','V9'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'lush' },
+  { id:'ns-lush-2', name:'Imaj9–♭VIImaj9–IV9–V9',    desc:'Major 7ths with the borrowed ♭VII — Frank Ocean, Solange sonic palette', genre:'Neo-Soul / Alternative R&B', feel:'Dreamy, rich, cinematic', example:'Solo — Frank Ocean / Cranes in the Sky — Solange', degrees:['Imaj9','♭VIImaj9','IV9','V9'], steps:[0,10,5,7], mixedQ:['maj7','maj7','dom7','dom7'], cat:'lush' },
+  { id:'ns-lush-3', name:'Imaj7–iii7–vi9–ii9',        desc:'All-diatonic lush loop — stays in key but luxuriates in extensions', genre:'Neo-Soul / Soul-Jazz', feel:'Warm, smooth, timeless', example:'If You Really Love Me — Stevie Wonder / Features — Erykah Badu', degrees:['Imaj7','iii7','vi9','ii9'], steps:[0,4,9,2], mixedQ:['maj7','min7','min7','min7'], cat:'lush' },
+  { id:'ns-lush-4', name:'♭VImaj7–♭VIImaj7–Imaj9',   desc:'Two-chord slide into the I — floating, hymnal resolution. Lauryn Hill style', genre:'Neo-Soul / Gospel Soul', feel:'Uplifting, sacred, lush', example:'Ex-Factor — Lauryn Hill / Killing Me Softly — Roberta Flack', degrees:['♭VImaj7','♭VIImaj7','Imaj9'], steps:[8,10,0], mixedQ:['maj7','maj7','maj7'], cat:'lush' },
+  { id:'ns-lush-5', name:'IVmaj9–iii7–ii9–Imaj7',    desc:'Descending diatonic lush — each chord steps down, classic Stevie Wonder movement', genre:'Soul / Neo-Soul', feel:'Descending, warm, nostalgic', example:'All I Do — Stevie Wonder / The Warmth — Incognito', degrees:['IVmaj9','iii7','ii9','Imaj7'], steps:[5,4,2,0], mixedQ:['maj7','min7','min7','maj7'], cat:'lush' },
   // GROOVE
-  { id:'ns-groove-1', name:'i9–♭VII9–♭VI9–V9',       desc:'Minor descending groove — The Roots, Common. Relentless downward motion', genre:'Hip-Hop Soul / Neo-Soul', feel:'Descending, hypnotic, deep', degrees:['i9','♭VII9','♭VI9','V9'], steps:[0,10,8,7], mixedQ:['min7','dom7','dom7','dom7'], cat:'groove' },
-  { id:'ns-groove-2', name:'i9–iv9–♭VII9–♭III',      desc:'Minor modal groove loop — J Dilla, Questlove. Dark with rhythmic momentum', genre:'Neo-Soul / Hip-Hop Soul', feel:'Deep, rolling, hypnotic', degrees:['i9','iv9','♭VII9','♭III'], steps:[0,5,10,3], mixedQ:['min7','min7','dom7','major'], cat:'groove' },
-  { id:'ns-groove-3', name:'i9–♭III–♭VII9–IV9',      desc:'The Lauryn Hill / Maxwell groove — minor tonic with major borrowed chords', genre:'Neo-Soul', feel:'Powerful, grooving, soulful', degrees:['i9','♭III','♭VII9','IV9'], steps:[0,3,10,5], mixedQ:['min7','major','dom7','dom7'], cat:'groove' },
-  { id:'ns-groove-4', name:'I9–IV9–I9–V9',            desc:'Major groove — Prince/Stevie funk feel, 9th chords throughout', genre:'Soul-Funk / Neo-Soul', feel:'Bright, funky, driving', degrees:['I9','IV9','I9','V9'], steps:[0,5,0,7], mixedQ:['dom7','dom7','dom7','dom7'], cat:'groove' },
-  { id:'ns-groove-5', name:'ii9–V9–I6/9–VI9',         desc:'Jazz-soul ii–V turnaround with added colour — sophisticated groove', genre:'Neo-Soul / Jazz', feel:'Sophisticated, groove-forward', degrees:['ii9','V9','I6/9','VI9'], steps:[2,7,0,9], mixedQ:['min7','dom7','maj7','dom7'], cat:'groove' },
+  { id:'ns-groove-1', name:'i9–♭VII9–♭VI9–V9',       desc:'Minor descending groove — The Roots, Common. Relentless downward motion', genre:'Hip-Hop Soul / Neo-Soul', feel:'Descending, hypnotic, deep', example:'The Light — Common / Seed 2.0 — The Roots', degrees:['i9','♭VII9','♭VI9','V9'], steps:[0,10,8,7], mixedQ:['min7','dom7','dom7','dom7'], cat:'groove' },
+  { id:'ns-groove-2', name:'i9–iv9–♭VII9–♭III',      desc:'Minor modal groove loop — J Dilla, Questlove. Dark with rhythmic momentum', genre:'Neo-Soul / Hip-Hop Soul', feel:'Deep, rolling, hypnotic', example:'You Got Me — The Roots / The Seed — The Roots', degrees:['i9','iv9','♭VII9','♭III'], steps:[0,5,10,3], mixedQ:['min7','min7','dom7','major'], cat:'groove' },
+  { id:'ns-groove-3', name:'i9–♭III–♭VII9–IV9',      desc:'The Lauryn Hill / Maxwell groove — minor tonic with major borrowed chords', genre:'Neo-Soul', feel:'Powerful, grooving, soulful', example:'Ready or Not — Fugees / Lost Ones — Lauryn Hill', degrees:['i9','♭III','♭VII9','IV9'], steps:[0,3,10,5], mixedQ:['min7','major','dom7','dom7'], cat:'groove' },
+  { id:'ns-groove-4', name:'I9–IV9–I9–V9',            desc:'Major groove — Prince/Stevie funk feel, 9th chords throughout', genre:'Soul-Funk / Neo-Soul', feel:'Bright, funky, driving', example:'Superstition — Stevie Wonder / Higher Ground — Stevie Wonder', degrees:['I9','IV9','I9','V9'], steps:[0,5,0,7], mixedQ:['dom7','dom7','dom7','dom7'], cat:'groove' },
+  { id:'ns-groove-5', name:'ii9–V9–I6/9–VI9',         desc:'Jazz-soul ii–V turnaround with added colour — sophisticated groove', genre:'Neo-Soul / Jazz', feel:'Sophisticated, groove-forward', example:'Just the Two of Us — Grover Washington Jr. / Compared to What — Les McCann', degrees:['ii9','V9','I6/9','VI9'], steps:[2,7,0,9], mixedQ:['min7','dom7','maj7','dom7'], cat:'groove' },
   // MINOR
-  { id:'ns-minor-1', name:'im9–♭VImaj9–♭III–♭VII9',  desc:'Epic minor neo-soul arc — Beyoncé "Love On Top", massive orchestral feel', genre:'R&B / Neo-Soul', feel:'Epic, sweeping, cinematic', degrees:['im9','♭VImaj9','♭III','♭VII9'], steps:[0,8,3,10], mixedQ:['min7','maj7','major','dom7'], cat:'minor' },
-  { id:'ns-minor-2', name:'im9–iv9–♭VII9–♭VImaj7',   desc:'Aeolian soul loop — descends through the natural minor scale with lush extensions', genre:'Neo-Soul / Dark Soul', feel:'Melancholic, soulful, deep', degrees:['im9','iv9','♭VII9','♭VImaj7'], steps:[0,5,10,8], mixedQ:['min7','min7','dom7','maj7'], cat:'minor' },
-  { id:'ns-minor-3', name:'im9–ii∅–V7♭9–im9',        desc:'Minor ii–V–i with extensions — jazz harmony in a soul context. Intimate and elegant', genre:'Soul-Jazz / Neo-Soul', feel:'Intimate, elegant, resolving', degrees:['im9','ii∅','V7♭9','im9'], steps:[0,2,7,0], mixedQ:['min7','min7','dom7','min7'], cat:'minor' },
-  { id:'ns-minor-4', name:'im9–♭IImaj7–im9–♭VImaj7', desc:'Phrygian neo-soul — the half-step ♭II gives a Sade-like mysterious quality', genre:'Neo-Soul / Quiet Storm', feel:'Mysterious, intimate, sophisticated', degrees:['im9','♭IImaj7','im9','♭VImaj7'], steps:[0,1,0,8], mixedQ:['min7','maj7','min7','maj7'], cat:'minor' },
+  { id:'ns-minor-1', name:'im9–♭VImaj9–♭III–♭VII9',  desc:'Epic minor neo-soul arc — massive orchestral feel', genre:'R&B / Neo-Soul', feel:'Epic, sweeping, cinematic', example:'No Ordinary Love — Sade / Cherish the Day — Sade', degrees:['im9','♭VImaj9','♭III','♭VII9'], steps:[0,8,3,10], mixedQ:['min7','maj7','major','dom7'], cat:'minor' },
+  { id:'ns-minor-2', name:'im9–iv9–♭VII9–♭VImaj7',   desc:'Aeolian soul loop — descends through the natural minor scale with lush extensions', genre:'Neo-Soul / Dark Soul', feel:'Melancholic, soulful, deep', example:'Bag Lady — Erykah Badu / On & On — Erykah Badu', degrees:['im9','iv9','♭VII9','♭VImaj7'], steps:[0,5,10,8], mixedQ:['min7','min7','dom7','maj7'], cat:'minor' },
+  { id:'ns-minor-3', name:'im9–ii∅–V7♭9–im9',        desc:'Minor ii–V–i with extensions — jazz harmony in a soul context. Intimate and elegant', genre:'Soul-Jazz / Neo-Soul', feel:'Intimate, elegant, resolving', example:'Afro Blue — Erykah Badu / A Love Affair — The Internet', degrees:['im9','ii∅','V7♭9','im9'], steps:[0,2,7,0], mixedQ:['min7','min7','dom7','min7'], cat:'minor' },
+  { id:'ns-minor-4', name:'im9–♭IImaj7–im9–♭VImaj7', desc:'Phrygian neo-soul — the half-step ♭II gives a Sade-like mysterious quality', genre:'Neo-Soul / Quiet Storm', feel:'Mysterious, intimate, sophisticated', example:'By Your Side — Sade / Smooth Operator — Sade', degrees:['im9','♭IImaj7','im9','♭VImaj7'], steps:[0,1,0,8], mixedQ:['min7','maj7','min7','maj7'], cat:'minor' },
   // MODAL
-  { id:'ns-modal-1', name:'im9–IV9 (Dorian vamp)',    desc:'Dorian mode groove — one of the most-used sounds in neo-soul. Raised 6th gives light', genre:'Neo-Soul / Modal Soul', feel:'Soulful, open, modal', degrees:['im9','IV9'], steps:[0,5], mixedQ:['min7','dom7'], cat:'modal' },
-  { id:'ns-modal-2', name:'Imaj9–II9 (Lydian)',       desc:'Lydian major vamp — the raised ♯4 creates an ethereal, weightless feeling', genre:'Neo-Soul / Ambient Soul', feel:'Ethereal, floating, luminous', degrees:['Imaj9','II9'], steps:[0,2], mixedQ:['maj7','dom7'], cat:'modal' },
-  { id:'ns-modal-3', name:'I9–♭VII9–IV9 (Mixolydian)', desc:'Mixolydian soul — the flat 7 gives a bluesy, grounded, earthy quality', genre:'Soul / R&B', feel:'Earthy, warm, grounded', degrees:['I9','♭VII9','IV9'], steps:[0,10,5], mixedQ:['dom7','dom7','dom7'], cat:'modal' },
-  { id:'ns-modal-4', name:'im9–♭VIImaj9–♭VImaj7–♭VIImaj9', desc:'Aeolian modal loop — dreamy, meditative. Massive in slow neo-soul ballads', genre:'Neo-Soul Ballad', feel:'Meditative, dreamy, enveloping', degrees:['im9','♭VIImaj9','♭VImaj7','♭VIImaj9'], steps:[0,10,8,10], mixedQ:['min7','maj7','maj7','maj7'], cat:'modal' },
-  { id:'ns-modal-5', name:'Imaj9–♭VImaj9–♭IVmaj7–V9', desc:'Modal interchange loop — borrowing ♭VI and ♭IV from parallel minor for maximum lushness', genre:'Neo-Soul / Progressive R&B', feel:'Lush, harmonically adventurous', degrees:['Imaj9','♭VImaj9','♭IVmaj7','V9'], steps:[0,8,5,7], mixedQ:['maj7','maj7','maj7','dom7'], cat:'modal' },
+  { id:'ns-modal-1', name:'im9–IV9 (Dorian vamp)',    desc:'Dorian mode groove — one of the most-used sounds in neo-soul. Raised 6th gives light', genre:'Neo-Soul / Modal Soul', feel:'Soulful, open, modal', example:'Oye Como Va — Santana / Love\'s in Need of Love Today — Stevie Wonder', degrees:['im9','IV9'], steps:[0,5], mixedQ:['min7','dom7'], cat:'modal' },
+  { id:'ns-modal-2', name:'Imaj9–II9 (Lydian)',       desc:'Lydian major vamp — the raised ♯4 creates an ethereal, weightless feeling', genre:'Neo-Soul / Ambient Soul', feel:'Ethereal, floating, luminous', example:'What a Wonderful World — IZ / Wildflower — Hues Corporation', degrees:['Imaj9','II9'], steps:[0,2], mixedQ:['maj7','dom7'], cat:'modal' },
+  { id:'ns-modal-3', name:'I9–♭VII9–IV9 (Mixolydian)', desc:'Mixolydian soul — the flat 7 gives a bluesy, grounded, earthy quality', genre:'Soul / R&B', feel:'Earthy, warm, grounded', example:'Question of U — Prince / Sign \'O\' the Times — Prince', degrees:['I9','♭VII9','IV9'], steps:[0,10,5], mixedQ:['dom7','dom7','dom7'], cat:'modal' },
+  { id:'ns-modal-4', name:'im9–♭VIImaj9–♭VImaj7–♭VIImaj9', desc:'Aeolian modal loop — dreamy, meditative. Massive in slow neo-soul ballads', genre:'Neo-Soul Ballad', feel:'Meditative, dreamy, enveloping', example:'Brown Sugar — D\'Angelo / Voodoo (album) — D\'Angelo', degrees:['im9','♭VIImaj9','♭VImaj7','♭VIImaj9'], steps:[0,10,8,10], mixedQ:['min7','maj7','maj7','maj7'], cat:'modal' },
+  { id:'ns-modal-5', name:'Imaj9–♭VImaj9–♭IVmaj7–V9', desc:'Modal interchange loop — borrowing ♭VI and ♭IV from parallel minor for maximum lushness', genre:'Neo-Soul / Progressive R&B', feel:'Lush, harmonically adventurous', example:'Beautiful — India.Arie / Little Wing — Jimi Hendrix', degrees:['Imaj9','♭VImaj9','♭IVmaj7','V9'], steps:[0,8,5,7], mixedQ:['maj7','maj7','maj7','dom7'], cat:'modal' },
+  // GOSPEL SOUL
+  { id:'ns-gospel-1', name:'I–IV–♭VII–IV (Gospel Soul)', desc:'The jubilant soul-gospel lift — Aretha Franklin\'s foundational sound', genre:'Gospel Soul / R&B', feel:'Jubilant, uplifting, powerful', example:'Respect — Aretha Franklin / Think — Aretha Franklin', degrees:['I','IV','♭VII','IV'], steps:[0,5,10,5], cat:'gospel' },
+  { id:'ns-gospel-2', name:'im–♭VImaj7–♭IIImaj7–♭VII', desc:'Cinematic gospel minor arc — devotional and sweeping', genre:'Gospel Soul / Neo-Soul', feel:'Devotional, cinematic, soulful', example:'A Change Is Gonna Come — Sam Cooke / If You Don\'t Know Me By Now — Harold Melvin', degrees:['im','♭VImaj7','♭IIImaj7','♭VII'], steps:[0,8,3,10], mixedQ:['minor','maj7','maj7','major'], cat:'gospel' },
+  { id:'ns-gospel-3', name:'I–♭VII–IV–I (Gospel Lift)', desc:'The church lift — borrowed ♭VII before the IV gives an ecstatic, transcendent feeling', genre:'Gospel / Soul', feel:'Transcendent, ecstatic, warm', example:'I\'ll Take You There — Staple Singers / Higher Ground — Stevie Wonder', degrees:['I','♭VII','IV','I'], steps:[0,10,5,0], cat:'gospel' },
+  // QUIET STORM
+  { id:'ns-qs-1', name:'Imaj9–VI7–ii9–V13',           desc:'Smooth R&B slow jam — the definitive quiet storm sound of the 80s and 90s', genre:'Quiet Storm / Smooth R&B', feel:'Silky, intimate, slow', example:'Never Too Much — Luther Vandross / Endless Love — Diana Ross & Lionel Richie', degrees:['Imaj9','VI7','ii9','V13'], steps:[0,9,2,7], mixedQ:['maj7','dom7','min7','dom7'], cat:'quietstorm' },
+  { id:'ns-qs-2', name:'im9–♭VImaj9–♭IIImaj7–V9',    desc:'Minor quiet storm arc — midnight R&B, sophisticated and sensual', genre:'Quiet Storm / R&B Ballad', feel:'Midnight, sensual, brooding', example:'No Ordinary Love — Sade / Bed — J. Holiday', degrees:['im9','♭VImaj9','♭IIImaj7','V9'], steps:[0,8,3,7], mixedQ:['min7','maj7','maj7','dom7'], cat:'quietstorm' },
+  { id:'ns-qs-3', name:'Imaj9–iii7–♭VIImaj7–IV9',    desc:'Slow jam lateral movement — feels like drifting, lush and unresolved', genre:'R&B Ballad / Neo-Soul', feel:'Drifting, lush, romantic', example:'Spend My Life With You — Eric Benét / Angel of Mine — Monica', degrees:['Imaj9','iii7','♭VIImaj7','IV9'], steps:[0,4,10,5], mixedQ:['maj7','min7','maj7','dom7'], cat:'quietstorm' },
 ];
 
 // ════════════════════════════════════════════════════════════════
@@ -1724,6 +2099,7 @@ function renderGenericProgressions(params) {
     cardDiv.innerHTML = `
       <div class="prog-card-name">${prog.name}</div>
       <div class="prog-card-meta">${prog.genre} · ${prog.feel}</div>
+      ${prog.example ? `<div style="font-size:0.72rem;color:var(--muted);font-style:italic;margin-top:0.2rem;font-family:'Crimson Pro',serif">♪ ${prog.example}</div>` : ''}
       <span class="cat-tag" style="color:${accentColor};border-color:${accentColor}">${prog.cat.charAt(0).toUpperCase()+prog.cat.slice(1)}</span>
     `;
     cardDiv.onclick = () => { selectProgFn(prog.id); closeDrawer(); };
@@ -1751,6 +2127,7 @@ function renderGenericProgressions(params) {
       const tip = `<div class="tips-box" style="border-color:${accentColor};margin-bottom:0.85rem">
         <strong style="color:${accentColor}">${prog.name}</strong> — ${prog.desc}.<br>
         Feel: <em>${prog.feel}</em>. In <strong>${key}</strong>: ${chords.map(c=>c.name).join(' → ')}
+        ${prog.example ? `<br><span style="color:var(--gold-light);font-size:0.9rem">♪ ${prog.example}</span>` : ''}
       </div>`;
 
       const allV = chords.map(c => {
@@ -1759,9 +2136,11 @@ function renderGenericProgressions(params) {
         return { c, v };
       });
 
-      const diagHtml = `<div class="section-label" style="margin-bottom:0.6rem;color:${accentColor}">Chord Voicings</div>
-        <div class="prog-diagrams">${allV.map(({c,v})=>`
-          <div class="chord-card">
+      const gProgPlayId = `play-${prog.id}`;
+      const diagHtml = `
+        ${buildPlaybackBar(allV.map(x=>x.v.voicing), allV.map(x=>x.v.baseFret), gProgPlayId)}
+        <div class="prog-diagrams">${allV.map(({c,v},idx)=>`
+          <div class="chord-card" data-chord-idx="${idx}">
             <div class="card-name">${c.name}</div>
             <div class="card-label">${c.degree} · ${v.baseFret<=1?'Open':'Fret '+v.baseFret}</div>
             ${buildFretboardSVG(v.voicing, v.baseFret)}
@@ -1876,14 +2255,28 @@ function buildDrawerContent() {
       <div class="key-grid">${NOTES.map(n=>`<button class="key-btn${n===currentRoot?' active':''}" onclick="syncRoot('${n}')">${n}</button>`).join('')}</div>
       <div class="drawer-label">Quality</div>
       <div class="quality-row">${CHORD_QUALITIES.map(q=>`<button class="pill${q===currentQuality?' active':''}" onclick="setChordQuality('${q}');closeDrawer()">${qLabels[q]}</button>`).join('')}</div>
+      <div class="drawer-label" style="margin-top:0.75rem">Capo</div>
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap;">
+        <select style="font-size:0.82rem;padding:0.4rem 0.6rem;" onchange="updateCapo(this.value)">
+          ${[0,1,2,3,4,5,6,7].map(f=>`<option value="${f}"${capo===f?' selected':''}>${f===0?'None':'Fret '+f}</option>`).join('')}
+        </select>
+        <span style="font-size:0.72rem;color:var(--amber)" id="drawerCapoSoundsAs"></span>
+      </div>
     `;
+    // Update sounds-as in drawer
+    if (capo > 0) {
+      const soundRoot = NOTES[(NOTES.indexOf(currentRoot) + capo) % 12];
+      const qNames = { major:'Major', minor:'Minor', dom7:'Dom 7', maj7:'Maj 7', min7:'Min 7', sus2:'Sus2' };
+      const el = body.querySelector('#drawerCapoSoundsAs');
+      if (el) el.textContent = `Sounds like ${soundRoot} ${qNames[currentQuality]||currentQuality}`;
+    }
   } else if (tab === 'progs') {
     const key = getProgKey();
     body.innerHTML = `
       <div class="drawer-label">Key</div>
       <div class="key-grid">${NOTES.map(n=>`<button class="key-btn${n===key?' active':''}" onclick="syncProgKey('${n}')">${n}</button>`).join('')}</div>
       <div class="drawer-label">Filter</div>
-      <div class="filter-row">${['all','classic','dark','folk','modal','neosoul'].map(cat=>`<button class="filter-chip${cat===progFilter?' active':''}" onclick="setProgFilter(this,'${cat}')">${cat==='all'?'All':cat==='neosoul'?'Neo-Soul':cat.charAt(0).toUpperCase()+cat.slice(1)}</button>`).join('')}</div>
+      <div class="filter-row">${['all','classic','dark','folk','modal','blues','gospel','latin','neosoul'].map(cat=>`<button class="filter-chip${cat===progFilter?' active':''}" onclick="setProgFilter(this,'${cat}')">${cat==='all'?'All':cat==='neosoul'?'Neo-Soul':cat.charAt(0).toUpperCase()+cat.slice(1)}</button>`).join('')}</div>
     `;
   } else if (tab === 'jazz') {
     body.innerHTML = `
@@ -1897,7 +2290,7 @@ function buildDrawerContent() {
       <div class="drawer-label">Key</div>
       <div class="key-grid">${NOTES.map(n=>`<button class="key-btn${n===jazzProgKey?' active':''}" onclick="syncJazzProgKey('${n}')">${n}</button>`).join('')}</div>
       <div class="drawer-label">Filter</div>
-      <div class="filter-row">${['all','standards','minor','modal','blues','turnaround'].map(cat=>`<button class="filter-chip${cat===jazzProgFilter?' active':''}" onclick="setJazzProgFilter(this,'${cat}')">${cat==='all'?'All':cat.charAt(0).toUpperCase()+cat.slice(1)}</button>`).join('')}</div>
+      <div class="filter-row">${['all','standards','minor','modal','blues','turnaround','latin','ballad'].map(cat=>`<button class="filter-chip${cat===jazzProgFilter?' active':''}" onclick="setJazzProgFilter(this,'${cat}')">${cat==='all'?'All':cat.charAt(0).toUpperCase()+cat.slice(1)}</button>`).join('')}</div>
     `;
   } else if (tab === 'neosoul') {
     body.innerHTML = `
@@ -1911,21 +2304,39 @@ function buildDrawerContent() {
       <div class="drawer-label">Key</div>
       <div class="key-grid">${NOTES.map(n=>`<button class="key-btn${n===neoProgKey?' active':''}" onclick="syncNeoProgKey('${n}')">${n}</button>`).join('')}</div>
       <div class="drawer-label">Filter</div>
-      <div class="filter-row">${['all','lush','groove','minor','modal'].map(cat=>`<button class="filter-chip${cat===neoProgFilter?' active':''}" onclick="setNeoProgFilter(this,'${cat}')">${cat==='all'?'All':cat.charAt(0).toUpperCase()+cat.slice(1)}</button>`).join('')}</div>
+      <div class="filter-row">${['all','lush','groove','minor','modal','gospel','quietstorm'].map(cat=>`<button class="filter-chip${cat===neoProgFilter?' active':''}" onclick="setNeoProgFilter(this,'${cat}')">${cat==='all'?'All':cat==='quietstorm'?'Quiet Storm':cat.charAt(0).toUpperCase()+cat.slice(1)}</button>`).join('')}</div>
     `;
   }
 }
 
 function updateDrawerLabel() {
   const label = document.getElementById('drawerLabel');
+  const hint  = document.getElementById('drawerHint');
   if (!label) return;
+
   const qNames = { major:'Major', minor:'Minor', dom7:'Dom 7', maj7:'Maj 7', min7:'Min 7', sus2:'Sus2' };
+
+  const hintMap = {
+    chords:    'Tap to change root & quality',
+    progs:     'Tap to change key & filter',
+    jazz:      'Tap to change root & filter',
+    jazzprogs: 'Tap to change key & filter',
+    neosoul:   'Tap to change root & filter',
+    neoprogs:  'Tap to change key & filter',
+    favs:      'Your saved chords',
+  };
+
   if      (currentTab==='chords')    label.textContent = `${currentRoot} ${qNames[currentQuality]||currentQuality}`;
   else if (currentTab==='progs')     label.textContent = `Key of ${getProgKey()} · ${progFilter==='all'?'All':progFilter}`;
   else if (currentTab==='jazz')      label.textContent = `Jazz · ${jazzRoot} · ${jazzFilter==='all'?'All':jazzFilter}`;
   else if (currentTab==='jazzprogs') label.textContent = `Jazz Progs · Key of ${jazzProgKey}`;
   else if (currentTab==='neosoul')   label.textContent = `Neo-Soul · ${neoRoot} · ${neoFilter==='all'?'All':neoFilter}`;
   else if (currentTab==='neoprogs')  label.textContent = `NS Progs · Key of ${neoProgKey}`;
+  else if (currentTab==='story')     label.textContent = storyMood ? `Story · ${MOODS[storyMood]?.name||storyMood}` : 'Story Mode';
+  else if (currentTab==='reverse')   label.textContent = 'Key Finder';
+  else if (currentTab==='favs')      label.textContent = `${Object.keys(favourites).length} saved chord${Object.keys(favourites).length===1?'':'s'}`;
+
+  if (hint) hint.textContent = hintMap[currentTab] || 'Tap to change ↑';
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1942,8 +2353,8 @@ function setTab(tab) {
   currentTab = tab;
   // Update tab button active states
   document.querySelectorAll('.tab-btn').forEach(btn => { btn.className = 'tab-btn'; });
-  const tabMap = { chords:0, progs:1, jazz:2, jazzprogs:3, neosoul:4, neoprogs:5, favs:6 };
-  const activeClass = { chords:'active-chords', progs:'active-progs', jazz:'active-jazz', jazzprogs:'active-jazzprogs', neosoul:'active-neosoul', neoprogs:'active-neoprogs', favs:'active-chords' };
+  const tabMap = { chords:0, progs:1, jazz:2, jazzprogs:3, neosoul:4, neoprogs:5, story:6, reverse:7, favs:8 };
+  const activeClass = { chords:'active-chords', progs:'active-progs', jazz:'active-jazz', jazzprogs:'active-jazzprogs', neosoul:'active-neosoul', neoprogs:'active-neoprogs', story:'active-progs', reverse:'active-chords', favs:'active-chords' };
   const btns = document.querySelectorAll('.tab-btn');
   if (btns[tabMap[tab]]) btns[tabMap[tab]].classList.add(activeClass[tab]);
 
@@ -1958,7 +2369,15 @@ function setTab(tab) {
     if (el) el.style.display = id === 'ds-'+tab ? 'block' : 'none';
   });
 
-  // Mobile controls visibility
+  // Scroll active tab button into view in the scrollable tab bar
+  const activBtn = btns[tabMap[tab]];
+  if (activBtn) activBtn.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'nearest' });
+
+  // Scroll content area back to top on every tab switch
+  const mainEl = document.getElementById('app-main');
+  if (mainEl) mainEl.scrollTop = 0;
+
+  // Mobile controls visibility — guard against null id (favs has none)
   const mobileControlMap = {
     chords:    'mobileRootRow',
     progs:     'mobileProgsControls',
@@ -1966,9 +2385,12 @@ function setTab(tab) {
     jazzprogs: 'mobileJazzProgsControls',
     neosoul:   'mobileNeoControls',
     neoprogs:  'mobileNeoProgsControls',
+    story:     null,
+    reverse:   null,
     favs:      null,
   };
   Object.entries(mobileControlMap).forEach(([t, id]) => {
+    if (!id) return;
     const el = document.getElementById(id);
     if (el) el.style.display = t===tab ? (t==='chords'?'flex':'block') : 'none';
   });
@@ -1982,58 +2404,192 @@ function setTab(tab) {
   else if (tab==='jazzprogs') renderJazzProgressions();
   else if (tab==='neosoul')   renderNeoSoul();
   else if (tab==='neoprogs')  renderNeoProgressions();
+  else if (tab==='story')     renderStoryMode();
+  else if (tab==='reverse')   renderReverseLookup();
   else if (tab==='favs')      renderFavs();
 }
 
 // ════════════════════════════════════════════════════════════════
-// AUDIO PLAYBACK — Web Audio API strum
+// AUDIO PLAYBACK — Web Audio API with tempo, loop, and pick mode
 // ════════════════════════════════════════════════════════════════
 let audioCtx = null;
+let playbackBpm     = 80;     // global BPM
+let playbackLoop    = false;  // loop flag
+let playbackMode    = 'strum'; // 'strum' | 'travis' | 'boomchick' | 'waltz' | 'arpeggio'
 
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
 }
 
 function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+const STRING_MIDI = [40, 45, 50, 55, 59, 64]; // E2 A2 D3 G3 B3 e4
 
-// String MIDI notes (open): E2=40, A2=45, D3=50, G3=55, B3=59, e4=64
-const STRING_MIDI = [40, 45, 50, 55, 59, 64];
+// ── Reverb — built entirely from code, no audio files ────────────
+// Creates a synthetic impulse response that simulates a small wooden room/body.
+// This is the key to warmth — reverb makes individual notes blend and breathe.
+let reverbNode = null;
 
-function strumChord(voicing, baseFret) {
-  const ctx = getAudioCtx();
-  if (ctx.state === 'suspended') ctx.resume();
+function getReverbNode() {
+  if (reverbNode) return reverbNode;
+  const ctx        = getAudioCtx();
+  const sampleRate = ctx.sampleRate;
+  const length     = sampleRate * 1.8; // 1.8 second reverb tail
+  const impulse    = ctx.createBuffer(2, length, sampleRate);
 
-  const notes = voicing.map((fret, si) => {
-    if (fret === null) return null;
-    return STRING_MIDI[si] + fret;
-  }).filter(Boolean);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = impulse.getChannelData(ch);
+    for (let i = 0; i < length; i++) {
+      // Exponentially decaying noise — models reflections dying away
+      const decay = Math.pow(1 - i / length, 2.2);
+      // Early reflections are stronger, late tail is diffuse
+      const earlyBoost = i < sampleRate * 0.04 ? 2.0 : 1.0;
+      data[i] = (Math.random() * 2 - 1) * decay * earlyBoost;
+    }
+  }
 
-  const now = ctx.currentTime;
-  notes.forEach((midi, i) => {
-    const delay = i * 0.035; // strum delay per string
-    const freq = midiToFreq(midi);
+  const convolver  = ctx.createConvolver();
+  convolver.buffer = impulse;
 
-    const osc = ctx.createOscillator();
+  // Wet/dry mix: convolver is wet, connect both to output
+  const wetGain = ctx.createGain();
+  wetGain.gain.value = 0.22; // 22% wet — enough warmth without muddiness
+  convolver.connect(wetGain);
+  wetGain.connect(ctx.destination);
+
+  reverbNode = convolver;
+  return reverbNode;
+}
+
+function playNote(freq, startTime, duration, volume = 0.18) {
+  const ctx    = getAudioCtx();
+  const reverb = getReverbNode();
+
+  // ── Additive harmonic synthesis ──────────────────────────────
+  // Stacked oscillators at harmonic intervals with independent decay rates.
+  // Higher harmonics fade faster — physically models a plucked string.
+  const sustainSecs = Math.max(duration * 1.8, 2.8); // longer sustain — no more staccato
+
+  const harmonics = [
+    { ratio: 1,   vol: 1.00, decay: 1.00 }, // fundamental — rings longest
+    { ratio: 2,   vol: 0.38, decay: 0.55 }, // octave
+    { ratio: 3,   vol: 0.18, decay: 0.38 }, // 5th + octave
+    { ratio: 4,   vol: 0.09, decay: 0.22 }, // 2 octaves — brief attack sparkle
+    { ratio: 0.5, vol: 0.12, decay: 0.90 }, // sub-octave — warm low body
+  ];
+
+  // Master gain: fast pluck attack, long natural decay
+  const masterGain = ctx.createGain();
+  masterGain.gain.setValueAtTime(0, startTime);
+  masterGain.gain.linearRampToValueAtTime(volume * 0.9, startTime + 0.006);
+  masterGain.gain.exponentialRampToValueAtTime(0.001, startTime + sustainSecs);
+
+  // Warm body EQ
+  const eq = ctx.createBiquadFilter();
+  eq.type = 'peaking'; eq.frequency.value = 260; eq.Q.value = 0.9; eq.gain.value = 5;
+
+  const hiCut = ctx.createBiquadFilter();
+  hiCut.type = 'lowpass'; hiCut.frequency.value = 5200;
+
+  // Dry signal path: masterGain → EQ → hiCut → speakers
+  masterGain.connect(eq);
+  eq.connect(hiCut);
+  hiCut.connect(ctx.destination);
+
+  // Wet signal path: masterGain → EQ → hiCut → reverb → speakers
+  hiCut.connect(reverb);
+
+  harmonics.forEach(({ ratio, vol, decay }) => {
+    const osc  = ctx.createOscillator();
     const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
 
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(freq, now + delay);
+    osc.type = ratio <= 1 ? 'triangle' : 'sine';
+    osc.frequency.setValueAtTime(freq * ratio, startTime);
 
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(3200, now + delay);
+    const harmSustain = sustainSecs * decay;
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(vol, startTime + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + harmSustain);
 
-    gain.gain.setValueAtTime(0, now + delay);
-    gain.gain.linearRampToValueAtTime(0.18, now + delay + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 1.4);
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now + delay);
-    osc.stop(now + delay + 1.5);
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start(startTime);
+    osc.stop(startTime + harmSustain + 0.1);
   });
+}
+
+function getMidiNotes(voicing) {
+  return voicing.map((fret, si) => fret === null ? null : STRING_MIDI[si] + fret).filter(Boolean);
+}
+
+// Strum: low to high with slight delay per string
+function strumChord(voicing, baseFret) {
+  const ctx  = getAudioCtx();
+  const now  = ctx.currentTime;
+  const notes = getMidiNotes(voicing);
+  notes.forEach((midi, i) => playNote(midiToFreq(midi), now + i * 0.032, 1.4));
+}
+
+// Travis pick pattern: Bass → 3 → 2 → 1 → Bass → 3 → 2 → 1
+// Travis pick: Bass → treble → mid → treble × 2 (classic Merle Travis/Chet Atkins pattern)
+function travisPick(voicing, beatDuration) {
+  const ctx   = getAudioCtx();
+  const now   = ctx.currentTime;
+  const notes = voicing.map((fret, si) => fret === null ? null : STRING_MIDI[si] + fret);
+  const bassIdx = notes.reduce((bi, n, i) => (n !== null && (bi === -1 || notes[bi] === null || n < notes[bi])) ? i : bi, -1);
+  const treble  = [3, 4, 5].filter(i => notes[i] !== null);
+  if (bassIdx === -1 || treble.length < 2) { strumChord(voicing, 1); return; }
+  const step = beatDuration / 8;
+  const pat  = [bassIdx, treble[0], treble[1] ?? treble[0], treble[0],
+                bassIdx, treble[0], treble[1] ?? treble[0], treble[0]];
+  pat.forEach((si, i) => {
+    if (notes[si] !== null) playNote(midiToFreq(notes[si]), now + i * step, step * 1.8, 0.15);
+  });
+}
+
+// Boom-Chick: single bass note on 1, strum treble on 2 (country/folk rhythm)
+function boomChick(voicing, beatDuration) {
+  const ctx   = getAudioCtx();
+  const now   = ctx.currentTime;
+  const notes = voicing.map((fret, si) => fret === null ? null : STRING_MIDI[si] + fret);
+  const bassIdx = notes.reduce((bi, n, i) => (n !== null && (bi === -1 || notes[bi] === null || n < notes[bi])) ? i : bi, -1);
+  const treble  = notes.slice(2).filter(Boolean);
+  if (bassIdx !== -1 && notes[bassIdx] !== null)
+    playNote(midiToFreq(notes[bassIdx]), now, beatDuration * 0.45, 0.22);
+  treble.forEach((midi, i) =>
+    playNote(midiToFreq(midi), now + beatDuration * 0.5 + i * 0.018, beatDuration * 0.4, 0.12));
+}
+
+// Waltz: bass on beat 1, chord strum on beats 2 & 3 (3/4 feel)
+function waltzPick(voicing, beatDuration) {
+  const ctx   = getAudioCtx();
+  const now   = ctx.currentTime;
+  const notes = voicing.map((fret, si) => fret === null ? null : STRING_MIDI[si] + fret);
+  const bassIdx = notes.reduce((bi, n, i) => (n !== null && (bi === -1 || notes[bi] === null || n < notes[bi])) ? i : bi, -1);
+  const treble  = notes.filter((n, i) => n !== null && i >= 2);
+  const beat    = beatDuration / 3;
+  if (bassIdx !== -1 && notes[bassIdx] !== null)
+    playNote(midiToFreq(notes[bassIdx]), now, beat * 1.6, 0.20);
+  [1, 2].forEach(b => treble.forEach((midi, i) =>
+    playNote(midiToFreq(midi), now + b * beat + i * 0.015, beat * 1.4, 0.11)));
+}
+
+// Arpeggio: ascending string by string across the beat
+function arpeggio(voicing, beatDuration) {
+  const ctx   = getAudioCtx();
+  const now   = ctx.currentTime;
+  const notes = getMidiNotes(voicing);
+  const step  = beatDuration / notes.length;
+  notes.forEach((midi, i) => playNote(midiToFreq(midi), now + i * step, beatDuration * 0.9, 0.16));
+}
+
+function playChordWithMode(voicing, beatDuration) {
+  if      (playbackMode === 'travis')    travisPick(voicing, beatDuration);
+  else if (playbackMode === 'boomchick') boomChick(voicing, beatDuration);
+  else if (playbackMode === 'waltz')     waltzPick(voicing, beatDuration);
+  else if (playbackMode === 'arpeggio')  arpeggio(voicing, beatDuration);
+  else strumChord(voicing, 1);
 }
 
 function addStrumBtn(voicing, baseFret) {
@@ -2042,8 +2598,459 @@ function addStrumBtn(voicing, baseFret) {
   </button>`;
 }
 
+// ── Playback controls bar (rendered inside each prog detail) ──
+function buildPlaybackBar(voicings, baseFrets, progPlayId) {
+  return `<div class="playback-bar">
+    <div class="section-label" style="margin:0">Chord Voicings</div>
+
+    <button class="prog-play-btn" id="${progPlayId}"
+      onclick="strumProgression(${JSON.stringify(voicings)},${JSON.stringify(baseFrets)},'${progPlayId}')">
+      <span class="play-icon">▶</span> Play
+    </button>
+
+    <label style="display:flex;align-items:center;gap:0.35rem;cursor:pointer;font-size:0.68rem;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;">
+      <input type="checkbox" id="loop-${progPlayId}"
+        onchange="playbackLoop=this.checked;document.getElementById('loop-${progPlayId}').closest('.playback-bar').querySelector('.prog-play-btn').classList.toggle('loop-active',this.checked)"
+        style="accent-color:var(--gold);width:14px;height:14px;">
+      Loop
+    </label>
+
+    <div class="pick-mode-wrap">
+      <button class="pick-mode-btn${playbackMode==='strum'?' active':''}"    onclick="setPickMode('strum',this)">Strum</button>
+      <button class="pick-mode-btn${playbackMode==='travis'?' active':''}"   onclick="setPickMode('travis',this)">Travis</button>
+      <button class="pick-mode-btn${playbackMode==='boomchick'?' active':''}" onclick="setPickMode('boomchick',this)">Boom-Chick</button>
+      <button class="pick-mode-btn${playbackMode==='waltz'?' active':''}"    onclick="setPickMode('waltz',this)">Waltz</button>
+      <button class="pick-mode-btn${playbackMode==='arpeggio'?' active':''}" onclick="setPickMode('arpeggio',this)">Arpeggio</button>
+    </div>
+
+    <div class="tempo-wrap">
+      <span class="tempo-label">BPM</span>
+      <input type="range" class="tempo-slider" min="40" max="180" value="${playbackBpm}"
+        oninput="playbackBpm=+this.value;this.nextElementSibling.textContent=this.value">
+      <span class="tempo-value">${playbackBpm}</span>
+    </div>
+  </div>`;
+}
+
+function setPickMode(mode, btn) {
+  playbackMode = mode;
+  // Match by the mode value embedded in onclick, not display text
+  // (button text "Boom-Chick" ≠ mode "boomchick", so text matching breaks)
+  document.querySelectorAll('.pick-mode-btn').forEach(b => {
+    const m = (b.getAttribute('onclick') || '').match(/setPickMode\('(\w+)'/);
+    b.classList.toggle('active', m && m[1] === mode);
+  });
+}
+
+// ── Core progression player ──
+// Track all active playback sessions so we can stop them all when a new one starts
+const activePlayback = {}; // { btnId: timeoutId }
+
+function strumProgression(voicings, baseFrets, btnId) {
+  const btn = document.getElementById(btnId);
+
+  // If this specific button is already playing, stop it
+  if (btn && btn.dataset.playing === '1') {
+    stopProgression(btnId);
+    return;
+  }
+
+  // Stop ALL other active progressions before starting this one
+  Object.keys(activePlayback).forEach(id => {
+    if (id !== btnId) stopProgression(id);
+  });
+
+  if (btn) { btn.dataset.playing = '1'; btn.innerHTML = '<span class="play-icon">■</span> Stop'; }
+  activePlayback[btnId] = null;
+
+  const beatMs = Math.round(60000 / playbackBpm) * 2; // 2 beats per chord
+
+  function playChordAt(index) {
+    // Guard: stop if this session was externally cancelled
+    if (btn && btn.dataset.playing !== '1') return;
+
+    const loop = document.getElementById(`loop-${btnId}`)?.checked || playbackLoop;
+
+    if (index >= voicings.length) {
+      if (loop) {
+        playChordAt(0);
+      } else {
+        stopProgression(btnId);
+      }
+      return;
+    }
+
+    // Update highlights
+    document.querySelectorAll('.seq-chord.playing-now, [data-chord-idx].playing-now').forEach(el => el.classList.remove('playing-now'));
+    const container = btn?.closest('.prog-detail') || btn?.closest('.story-output');
+    if (container) {
+      const seqEl = container.querySelectorAll('.seq-chord')[index];
+      if (seqEl) seqEl.classList.add('playing-now');
+      const diagEl = container.querySelectorAll('[data-chord-idx]')[index];
+      if (diagEl) diagEl.classList.add('playing-now');
+      const pillEl = container.querySelectorAll('.story-chord-pill')[index];
+      if (pillEl) pillEl.classList.add('playing-now');
+    }
+
+    playChordWithMode(voicings[index], beatMs / 1000);
+    activePlayback[btnId] = setTimeout(() => playChordAt(index + 1), beatMs);
+  }
+
+  playChordAt(0);
+}
+
+function stopProgression(btnId) {
+  if (activePlayback[btnId]) { clearTimeout(activePlayback[btnId]); }
+  delete activePlayback[btnId];
+  const btn = document.getElementById(btnId);
+  if (btn) { btn.dataset.playing = '0'; btn.innerHTML = '<span class="play-icon">▶</span> Play'; }
+  document.querySelectorAll('.seq-chord.playing-now, [data-chord-idx].playing-now, .story-chord-pill.playing-now')
+    .forEach(el => el.classList.remove('playing-now'));
+}
+
+function stopAllPlayback() {
+  Object.keys(activePlayback).forEach(id => stopProgression(id));
+}
+
 // ════════════════════════════════════════════════════════════════
-// FAVOURITES
+// STORY MODE — rules-based generative progressions
+// ════════════════════════════════════════════════════════════════
+let storyMood = null;
+let storyProg = null; // { key, chords: [{root,quality,degree}] }
+
+const MOODS = {
+  dark: {
+    name: 'Dark & Brooding',
+    icon: '🌑',
+    desc: 'Minor, Aeolian, Phrygian — deep shadows and unresolved tension',
+    keys: ['A','E','D','B'],
+    scale: 'minor',
+    templates: [
+      { degrees:[0,10,8,7],  qualities:['minor','major','major','major'], labels:['i','♭VII','♭VI','V'],   example:'Stairway to Heaven — Led Zeppelin' },
+      { degrees:[0,5,10,8],  qualities:['minor','minor','major','major'], labels:['i','iv','♭VII','♭VI'],  example:'House of the Rising Sun — The Animals' },
+      { degrees:[0,10,8,10], qualities:['minor','major','major','major'], labels:['i','♭VII','♭VI','♭VII'],example:'Hit the Road Jack — Ray Charles' },
+      { degrees:[0,1,0,10],  qualities:['minor','major','minor','major'], labels:['i','♭II','i','♭VII'],   example:'White Zombie — More Human Than Human' },
+      { degrees:[0,8,3,10],  qualities:['minor','major','major','major'], labels:['i','♭VI','♭III','♭VII'],example:'Believer — Imagine Dragons' },
+    ],
+  },
+  warm: {
+    name: 'Warm & Soulful',
+    icon: '☀️',
+    desc: 'Major 7ths and 9ths — golden afternoon, Stevie Wonder glow',
+    keys: ['G','D','A','E'],
+    scale: 'major',
+    templates: [
+      { degrees:[0,9,2,7],  qualities:['maj7','min7','min7','dom7'], labels:['Imaj7','vi7','ii7','V7'],   example:'Isn\'t She Lovely — Stevie Wonder' },
+      { degrees:[0,5,4,9],  qualities:['maj7','dom7','min7','dom7'], labels:['Imaj9','IV9','iii7','VI9'], example:'The Signature — D\'Angelo' },
+      { degrees:[0,9,5,7],  qualities:['maj7','min7','maj7','dom7'], labels:['Imaj7','vi7','IV','V7'],    example:'Just the Two of Us — Grover Washington Jr.' },
+      { degrees:[0,4,5,0],  qualities:['major','minor','major','major'],labels:['I','iii','IV','I'],       example:'The Boxer — Simon & Garfunkel' },
+      { degrees:[5,4,2,0],  qualities:['maj7','min7','min7','maj7'], labels:['IV','iii','ii','I'],         example:'All I Do — Stevie Wonder' },
+    ],
+  },
+  tense: {
+    name: 'Tense & Unresolved',
+    icon: '⚡',
+    desc: 'Diminished, altered, half-step clashes — the sound of suspension',
+    keys: ['C','F','G','D'],
+    scale: 'minor',
+    templates: [
+      { degrees:[0,1,0,7],  qualities:['minor','major','minor','dom7'], labels:['i','♭II','i','V7'],       example:'White Rabbit — Jefferson Airplane' },
+      { degrees:[2,7,0,9],  qualities:['min7','dom7','maj7','dom7'],    labels:['ii7','V7♭9','Imaj7','VI7'],example:'My Funny Valentine — Chet Baker' },
+      { degrees:[0,2,7,0],  qualities:['min7','min7','dom7','minor'],   labels:['im7','ii∅','V7','i'],      example:'Summertime — Miles Davis' },
+      { degrees:[0,6,7,0],  qualities:['minor','minor','major','minor'],labels:['i','♭V(dim)','V','i'],     example:'Creep — Radiohead' },
+    ],
+  },
+  bright: {
+    name: 'Bright & Uplifting',
+    icon: '🌟',
+    desc: 'Major pop, folk — open, joyful, effortlessly singable',
+    keys: ['C','G','D','A'],
+    scale: 'major',
+    templates: [
+      { degrees:[0,7,9,5],  qualities:['major','major','minor','major'], labels:['I','V','vi','IV'],        example:'Let Her Go — Passenger / Someone Like You — Adele' },
+      { degrees:[0,9,5,7],  qualities:['major','minor','major','major'], labels:['I','vi','IV','V'],         example:'Stand By Me — Ben E. King' },
+      { degrees:[0,5,0,7],  qualities:['major','major','major','major'], labels:['I','IV','I','V'],          example:'Will the Circle Be Unbroken (trad.)' },
+      { degrees:[0,4,5,7],  qualities:['major','minor','major','major'], labels:['I','iii','IV','V'],        example:'Brown Eyed Girl — Van Morrison' },
+      { degrees:[9,7,5,0],  qualities:['minor','major','major','major'], labels:['vi','V','IV','I'],         example:'Hotel California — Eagles' },
+    ],
+  },
+  modal: {
+    name: 'Mysterious & Modal',
+    icon: '🌙',
+    desc: 'Dorian, Lydian, Mixolydian — floating outside major and minor',
+    keys: ['D','E','A','G'],
+    scale: 'dorian',
+    templates: [
+      { degrees:[0,5,0,5],  qualities:['minor','major','minor','major'], labels:['i','IV','i','IV'],         example:'Oye Como Va — Santana / So What — Miles Davis' },
+      { degrees:[0,10,5,0], qualities:['major','major','major','major'], labels:['I','♭VII','IV','I'],       example:'Sweet Home Alabama — Lynyrd Skynyrd' },
+      { degrees:[0,2,0,2],  qualities:['maj7','dom7','maj7','dom7'],     labels:['I','II','I','II'],          example:'The Simpsons Theme — Danny Elfman' },
+      { degrees:[0,1,10,0], qualities:['minor','major','major','minor'], labels:['i','♭II','♭VII','i'],      example:'Wherever I May Roam — Metallica' },
+      { degrees:[0,7,5,10], qualities:['minor','major','major','major'], labels:['i','V','IV','♭VII'],       example:'Norwegian Wood — The Beatles' },
+    ],
+  },
+};
+
+// Harmonic substitution map — for each quality, what chords work in its place
+const SUBS = {
+  major:  ['major','maj7','sus2','dom7'],
+  minor:  ['minor','min7','sus2'],
+  maj7:   ['major','maj7'],
+  min7:   ['minor','min7'],
+  dom7:   ['dom7','major'],
+};
+
+function generateStoryProg(moodKey) {
+  const mood = MOODS[moodKey];
+  const tmpl = mood.templates[Math.floor(Math.random() * mood.templates.length)];
+  const key  = mood.keys[Math.floor(Math.random() * mood.keys.length)];
+  const keyIdx = NOTES.indexOf(key);
+
+  const chords = tmpl.degrees.map((step, i) => {
+    const root    = NOTES[(keyIdx + step + 12) % 12];
+    const quality = tmpl.qualities[i];
+    const degree  = tmpl.labels[i];
+    return { root, quality, degree };
+  });
+
+  return { key, chords, moodKey, tmpl };
+}
+
+function renderStoryMode() {
+  // Build mood grid if not done
+  const grid = document.getElementById('storyMoodGrid');
+  if (grid && grid.children.length === 0) {
+    Object.entries(MOODS).forEach(([key, mood]) => {
+      const card = document.createElement('div');
+      card.className = `mood-card${storyMood===key?' active':''}`;
+      card.innerHTML = `
+        <div class="mood-icon">${mood.icon}</div>
+        <div class="mood-name">${mood.name}</div>
+        <div class="mood-desc">${mood.desc}</div>`;
+      card.onclick = () => pickMood(key);
+      grid.appendChild(card);
+    });
+  } else if (grid) {
+    // Update active state
+    grid.querySelectorAll('.mood-card').forEach((c, i) => {
+      const key = Object.keys(MOODS)[i];
+      c.classList.toggle('active', key === storyMood);
+    });
+  }
+
+  if (storyProg) renderStoryOutput();
+}
+
+function pickMood(moodKey) {
+  storyMood = moodKey;
+  storyProg = generateStoryProg(moodKey);
+  renderStoryMode();
+  updateDrawerLabel();
+}
+
+function surpriseMeStory() {
+  if (storyMood) {
+    storyProg = generateStoryProg(storyMood);
+    renderStoryOutput();
+  }
+}
+
+function swapStoryChord(idx) {
+  if (!storyProg) return;
+  const chord = storyProg.chords[idx];
+  const mood  = MOODS[storyProg.moodKey];
+  // Find subs for this quality from same scale
+  const alts = (SUBS[chord.quality] || ['major','minor']).filter(q => q !== chord.quality);
+  const newQ  = alts[Math.floor(Math.random() * alts.length)] || chord.quality;
+  // Try a neighbouring scale degree
+  const keyIdx = NOTES.indexOf(storyProg.key);
+  const shifts = mood.scale === 'minor' ? [0,3,5,7,8,10] : [0,2,4,5,7,9,11];
+  const cur = (NOTES.indexOf(chord.root) - keyIdx + 12) % 12;
+  const neighbours = shifts.filter(s => s !== cur);
+  const newStep = neighbours[Math.floor(Math.random() * neighbours.length)] ?? cur;
+  storyProg.chords[idx] = {
+    root: NOTES[(keyIdx + newStep) % 12],
+    quality: newQ,
+    degree: chord.degree + '*',
+  };
+  renderStoryOutput();
+}
+
+function renderStoryOutput() {
+  const out   = document.getElementById('storyOutput');
+  if (!out || !storyProg) return;
+
+  const { key, chords, moodKey } = storyProg;
+  const mood  = MOODS[moodKey];
+  const playId = 'story-play';
+
+  // Build voicings
+  const voicings  = chords.map(c => lookupChord(c.root, c.quality, 'open'));
+  const vArr      = voicings.map(v => v.voicing);
+  const bArr      = voicings.map(v => v.baseFret);
+
+  const pillsHtml = chords.map((c, i) => `
+    <div class="story-chord-pill" data-chord-idx="${i}">
+      <div class="story-chord-deg">${c.degree}</div>
+      <div class="story-chord-name">${c.root}${c.quality==='minor'||c.quality==='min7'?'m':c.quality==='maj7'?'maj7':c.quality==='dom7'?'7':c.quality==='min7'?'m7':''}</div>
+      <div class="story-chord-alt">
+        <div class="story-alt-option" onclick="swapStoryChord(${i});event.stopPropagation()">↺ Swap chord</div>
+      </div>
+    </div>${i < chords.length - 1 ? '<div class="seq-arrow">→</div>' : ''}
+  `).join('');
+
+  const diagsHtml = voicings.map((v, i) => `
+    <div class="chord-card" data-chord-idx="${i}">
+      <div class="card-name">${chords[i].root}${chords[i].quality==='minor'||chords[i].quality==='min7'?'m':chords[i].quality==='maj7'?'maj7':chords[i].quality==='dom7'?'7':''}</div>
+      <div class="card-label">${chords[i].degree}</div>
+      <div class="fret-pos-label">${formatPos(v.baseFret, v.voicing)}</div>
+      ${buildFretboardSVG(v.voicing, v.baseFret)}
+    </div>`).join('');
+
+  out.innerHTML = `
+    <div class="story-output">
+      <div class="story-title">${mood.icon} ${mood.name}</div>
+      <div class="story-sub">Key of ${key} · ${chords.map(c=>c.root).join(' – ')} · <em>Tap a chord to swap it</em></div>
+      ${storyProg.tmpl.example ? `<div style="font-size:0.82rem;color:var(--gold-light);font-family:'Crimson Pro',serif;margin-bottom:0.75rem;">♪ ${storyProg.tmpl.example}</div>` : ''}
+
+      <div class="story-chord-row">${pillsHtml}</div>
+
+      ${buildPlaybackBar(vArr, bArr, playId)}
+
+      <div class="story-diag-grid">${diagsHtml}</div>
+
+      <div class="story-actions">
+        <button class="story-btn primary" onclick="surpriseMeStory()">↺ New Variation</button>
+        <button class="story-btn" onclick="pickMood('${['dark','warm','tense','bright','modal'].filter(m=>m!==moodKey)[Math.floor(Math.random()*4)]}')">Try Another Mood</button>
+        <button class="story-btn" onclick="storyProg.key=NOTES[(NOTES.indexOf(storyProg.key)+1)%12];renderStoryOutput()">Key Up ↑</button>
+        <button class="story-btn" onclick="storyProg.key=NOTES[(NOTES.indexOf(storyProg.key)+11)%12];renderStoryOutput()">Key Down ↓</button>
+      </div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// REVERSE KEY LOOKUP
+// ════════════════════════════════════════════════════════════════
+
+// All 12 major and natural minor scales as semitone sets
+const SCALE_DEFS = [];
+const MAJOR_INTERVALS = [0,2,4,5,7,9,11];
+const MINOR_INTERVALS = [0,2,3,5,7,8,10];
+NOTES.forEach((n, i) => {
+  SCALE_DEFS.push({ name: n + ' Major',    root: i, intervals: MAJOR_INTERVALS, mode: 'Major'    });
+  SCALE_DEFS.push({ name: n + ' Minor',    root: i, intervals: MINOR_INTERVALS, mode: 'Minor'    });
+  // Dorian
+  SCALE_DEFS.push({ name: n + ' Dorian',   root: i, intervals: [0,2,3,5,7,9,10], mode: 'Dorian' });
+  // Mixolydian
+  SCALE_DEFS.push({ name: n + ' Mixolydian', root: i, intervals: [0,2,4,5,7,9,10], mode: 'Mixolydian' });
+});
+
+// Parse a chord name string like "Am7", "Gmaj7", "C#m", "Bb" etc into {root, quality}
+function parseChordName(str) {
+  str = str.trim().replace(/♭/g,'b');
+  const m = str.match(/^([A-G][#b]?)(.*)/i);
+  if (!m) return null;
+  let root = m[1];
+  // Normalise flats
+  const flatMap = { 'Ab':'G#','Bb':'A#','Cb':'B','Db':'C#','Eb':'D#','Fb':'E','Gb':'F#' };
+  if (flatMap[root]) root = flatMap[root];
+  const rootIdx = NOTES.indexOf(root);
+  if (rootIdx === -1) return null;
+  const qual = m[2].toLowerCase();
+  let quality = 'major';
+  if (qual.includes('maj7') || qual.includes('maj9')) quality = 'maj7';
+  else if (qual.includes('m7') || qual.includes('min7') || qual.includes('m9')) quality = 'min7';
+  else if (qual.includes('7')) quality = 'dom7';
+  else if (qual.startsWith('m') || qual.startsWith('min')) quality = 'minor';
+  else if (qual.includes('sus')) quality = 'sus2';
+  return { root, rootIdx, quality };
+}
+
+// Score a scale against a set of parsed chords
+// Returns { score, matched, outside }
+function scoreScale(scaleDef, chords) {
+  const scaleNotes = new Set(scaleDef.intervals.map(i => (scaleDef.root + i) % 12));
+  let score = 0;
+  const matched = [];
+  const outside = [];
+
+  chords.forEach(c => {
+    const inScale = scaleNotes.has(c.rootIdx);
+    // Check quality compatibility
+    const relDegree = (c.rootIdx - scaleDef.root + 12) % 12;
+    const degreeIdx = scaleDef.intervals.indexOf(relDegree);
+
+    if (inScale) {
+      score += 2; // root is in scale
+      if (degreeIdx !== -1) {
+        // Check if quality matches expected diatonic quality
+        const expectedMajor = [0, 2, 4].includes(degreeIdx) || (scaleDef.mode === 'Major' && degreeIdx === 6);
+        if ((c.quality === 'major' || c.quality === 'maj7' || c.quality === 'dom7') && expectedMajor) score += 1;
+        if ((c.quality === 'minor' || c.quality === 'min7') && !expectedMajor) score += 1;
+      }
+      matched.push(c.root + (c.quality === 'minor' || c.quality === 'min7' ? 'm' : ''));
+    } else {
+      outside.push(c.root + (c.quality === 'minor' || c.quality === 'min7' ? 'm' : ''));
+    }
+  });
+
+  return { score, matched, outside };
+}
+
+function runReverseLookup() {
+  const input = document.getElementById('reverseInput');
+  if (!input) return;
+  const raw = input.value.trim();
+  if (!raw) { document.getElementById('reverseResult').innerHTML = ''; return; }
+
+  const tokens = raw.split(/\s+/);
+  const chords  = tokens.map(parseChordName).filter(Boolean);
+  if (chords.length === 0) {
+    document.getElementById('reverseResult').innerHTML =
+      `<div style="color:var(--muted);font-family:'Crimson Pro',serif;font-style:italic;">Couldn't parse those chords — try Am, G, Cmaj7, F#m etc.</div>`;
+    return;
+  }
+
+  // Score all scales
+  const results = SCALE_DEFS.map(def => {
+    const { score, matched, outside } = scoreScale(def, chords);
+    return { ...def, score, matched, outside };
+  }).sort((a, b) => b.score - a.score).slice(0, 6);
+
+  const maxScore = results[0].score;
+  const html = results.map((r, i) => {
+    const pct = maxScore > 0 ? Math.round((r.score / maxScore) * 100) : 0;
+    const confidence = pct >= 90 ? 'Strong match' : pct >= 60 ? 'Likely' : 'Possible';
+    return `<div class="key-result-card" onclick="applySuggestedKey('${r.name}')">
+      <div class="key-result-header">
+        <span class="key-result-name">${r.name}</span>
+        <span class="key-result-score">${confidence}</span>
+        <span class="key-result-mode" style="margin-left:auto">${r.mode}</span>
+      </div>
+      ${r.matched.length ? `<div class="key-result-matches">✓ ${r.matched.join(', ')}</div>` : ''}
+      ${r.outside.length ? `<div class="key-result-outside">Outside key: ${r.outside.join(', ')} — possible borrowed chords</div>` : ''}
+    </div>`;
+  }).join('');
+
+  document.getElementById('reverseResult').innerHTML =
+    `<div class="reverse-result"><div style="font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:0.6rem">
+      Best key matches for: ${chords.map(c=>c.root+(c.quality==='minor'||c.quality==='min7'?'m':'')).join(' – ')}
+    </div>${html}</div>`;
+}
+
+function applySuggestedKey(keyName) {
+  // Extract root note and switch to Progressions tab in that key
+  const m = keyName.match(/^([A-G]#?)/);
+  if (!m) return;
+  syncProgKey(m[1]);
+  setTab('progs');
+}
+
+function renderReverseLookup() {
+  // Tab is static HTML — just focus the input
+  const inp = document.getElementById('reverseInput');
+  if (inp && inp.value) runReverseLookup();
+}
+
 // ════════════════════════════════════════════════════════════════
 let favourites = {}; // { id: { name, voicing, baseFret, fingers, label, tips, source } }
 
@@ -2118,7 +3125,95 @@ function makeFavBtn(id, chordData) {
 }
 
 // ════════════════════════════════════════════════════════════════
-// CAPO
+// CAPO FINDER
+// ════════════════════════════════════════════════════════════════
+// Common open chord shapes and their root notes
+const OPEN_SHAPE_ROOTS = ['E','A','D','G','C','F','B','F#','G#','C#','D#','A#'];
+
+function runCapoFinder() {
+  // Each select pair (mobile/desktop) lives in a different part of the DOM.
+  // Read from whichever mobile select exists first (it's always in the tab view);
+  // fall back to the desktop sidebar select if mobile isn't rendered yet.
+  // Crucially: read shape and target independently so they don't overwrite each other.
+  const shapeEl  = document.getElementById('capoFinderShape');
+  const targetEl = document.getElementById('capoFinderTarget');
+  if (!shapeEl || !targetEl) return;
+
+  const shape  = shapeEl.value;
+  const target = targetEl.value;
+
+  const shapeIdx  = NOTES.indexOf(shape);
+  const targetIdx = NOTES.indexOf(target);
+  const capoFret  = (targetIdx - shapeIdx + 12) % 12;
+
+  let resultHtml = '';
+
+  if (capoFret === 0) {
+    // No capo needed — still update diagrams
+    updateCapo(0);
+    syncRoot(shape);
+    resultHtml = `<div class="capo-result">
+      <div class="capo-result-desc">
+        <strong style="color:var(--gold)">No capo needed</strong> — a ${shape} shape open is already ${target}.
+      </div>
+    </div>`;
+
+  } else if (capoFret > 7) {
+    // Impractical — suggest alternatives only
+    const alts = findAlternativeShapes(target);
+    resultHtml = `<div class="capo-impractical">Capo fret ${capoFret} is impractical for most players.</div>
+      <div class="capo-alt-row">
+        <span class="capo-alt-label">Better options:</span>
+        ${alts.map(a => `<button class="capo-alt-chip" onclick="applyCapoSuggestion('${a.shape}','${a.target}',${a.fret})">${a.shape} shape, capo ${a.fret}</button>`).join('')}
+      </div>`;
+
+  } else {
+    // Practical — show result, apply capo + root
+    updateCapo(capoFret);
+    syncRoot(shape);
+
+    const highNote = capoFret > 5
+      ? `<div class="capo-impractical">Fret ${capoFret} is playable but a bit high — consider an alternative below.</div>`
+      : '';
+    const alts = findAlternativeShapes(target).filter(a => a.shape !== shape && a.fret < capoFret);
+
+    resultHtml = `<div class="capo-result">
+      <div class="capo-result-fret">Fret ${capoFret}</div>
+      <div class="capo-result-desc">
+        Capo fret ${capoFret}, play a <strong>${shape}</strong> shape → sounds like <strong>${target}</strong>
+      </div>
+    </div>
+    ${highNote}
+    ${alts.length ? `<div class="capo-alt-row">
+      <span class="capo-alt-label">Alternatives:</span>
+      ${alts.map(a => `<button class="capo-alt-chip" onclick="applyCapoSuggestion('${a.shape}','${a.target}',${a.fret})">${a.shape} shape, capo ${a.fret}</button>`).join('')}
+    </div>` : ''}`;
+  }
+
+  const resultEl = document.getElementById('capoFinderResult');
+  if (resultEl) resultEl.innerHTML = resultHtml;
+}
+
+function findAlternativeShapes(target) {
+  // For a given target key, find all shape+capo combinations using common open shapes
+  const targetIdx = NOTES.indexOf(target);
+  const shapes = ['E','A','D','G','C'];  // most common open shapes
+  return shapes.map(shape => {
+    const shapeIdx = NOTES.indexOf(shape);
+    const fret = (targetIdx - shapeIdx + 12) % 12;
+    return { shape, target, fret };
+  }).filter(a => a.fret > 0 && a.fret <= 7)
+    .sort((a, b) => a.fret - b.fret);
+}
+
+function applyCapoSuggestion(shape, target, fret) {
+  const shapeEl  = document.getElementById('capoFinderShape');
+  const targetEl = document.getElementById('capoFinderTarget');
+  if (shapeEl)  shapeEl.value  = shape;
+  if (targetEl) targetEl.value = target;
+  runCapoFinder();
+}
+
 // ════════════════════════════════════════════════════════════════
 let capo = 0;
 
@@ -2220,6 +3315,8 @@ renderChords();
 renderProgressions();
 renderJazzProgressions();
 renderNeoProgressions();
+renderStoryMode();
+runCapoFinder(); // show initial capo finder result
 </script>
 </body>
 </html>
