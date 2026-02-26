@@ -1072,7 +1072,6 @@
         <button class="search-clear" onclick="document.getElementById('jazzSearch').value='';renderJazz()">✕</button>
       </div>
       <div id="jazzContent" class="chord-grid"></div>
-      <div id="jazzDetail"></div>
     </div>
 
     <!-- ── TAB 4: NEO-SOUL ── -->
@@ -1102,7 +1101,6 @@
         <button class="search-clear" onclick="document.getElementById('neoSearch').value='';renderNeoSoul()">✕</button>
       </div>
       <div id="neoContent" class="chord-grid"></div>
-      <div id="neoDetail"></div>
     </div>
 
     <!-- ── TAB 7: STORY MODE ── -->
@@ -1874,7 +1872,6 @@ function renderJazz() {
   let visible = JAZZ_CHORDS.filter(c => jazzFilter === 'all' || c.cat === jazzFilter);
   if (q) visible = visible.filter(c => c.name.toLowerCase().includes(q) || c.type.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q));
 
-  // Auto-select first chord if none selected or selected one no longer visible
   if (!jazzSelectedId || !visible.find(c => c.id === jazzSelectedId)) {
     jazzSelectedId = visible.length ? visible[0].id : null;
   }
@@ -1899,18 +1896,22 @@ function renderJazz() {
       <div class="fret-pos-label">${formatPos(v.baseFret, v.voicing)}</div>
       ${buildFretboardSVG(v.voicing, v.baseFret)}
     `;
-    card.onclick = (e) => { if (e.target.classList.contains('fav-btn')) return; jazzSelectedId=chord.id; showJazzDetail(chord,v,rootedName); renderJazz(); };
+    card.onclick = (e) => {
+      if (e.target.classList.contains('fav-btn')) return;
+      jazzSelectedId = chord.id;
+      renderJazz();
+    };
     container.appendChild(card);
-  });
 
-  // Always show detail for selected chord
-  if (jazzSelectedId) {
-    const ch = JAZZ_CHORDS.find(c => c.id === jazzSelectedId);
-    if (ch) {
-      const v = transposeJazzChord(ch, jazzRoot);
-      showJazzDetail(ch, v, transposeName(ch.name, ch, jazzRoot));
+    // Inject detail inline after selected card — spans full grid width
+    if (chord.id === jazzSelectedId) {
+      const detail = document.createElement('div');
+      detail.className = 'chord-detail-inline';
+      detail.id = 'jazzDetail';
+      container.appendChild(detail);
+      showJazzDetail(chord, v, rootedName);
     }
-  }
+  });
 }
 
 function showJazzDetail(chord, v, name) {
@@ -2056,7 +2057,6 @@ function renderNeoSoul() {
   let visible = NEOSOUL_CHORDS.filter(c => neoFilter === 'all' || c.cat === neoFilter);
   if (q) visible = visible.filter(c => c.name.toLowerCase().includes(q) || c.type.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q));
 
-  // Auto-select first chord if none selected or selected one no longer visible
   if (!neoSelectedId || !visible.find(c => c.id === neoSelectedId)) {
     neoSelectedId = visible.length ? visible[0].id : null;
   }
@@ -2081,18 +2081,22 @@ function renderNeoSoul() {
       <div class="fret-pos-label">${formatPos(v.baseFret, v.voicing)}</div>
       ${buildFretboardSVG(v.voicing, v.baseFret)}
     `;
-    card.onclick = (e) => { if (e.target.classList.contains('fav-btn')) return; neoSelectedId=chord.id; showNeoDetail(chord,v,rootedName); renderNeoSoul(); };
+    card.onclick = (e) => {
+      if (e.target.classList.contains('fav-btn')) return;
+      neoSelectedId = chord.id;
+      renderNeoSoul();
+    };
     container.appendChild(card);
-  });
 
-  // Always show detail for selected chord
-  if (neoSelectedId) {
-    const ch = NEOSOUL_CHORDS.find(c => c.id === neoSelectedId);
-    if (ch) {
-      const v = transposeJazzChord(ch, neoRoot);
-      showNeoDetail(ch, v, transposeName(ch.name, ch, neoRoot));
+    // Inject detail inline after selected card — spans full grid width
+    if (chord.id === neoSelectedId) {
+      const detail = document.createElement('div');
+      detail.className = 'chord-detail-inline';
+      detail.id = 'neoDetail';
+      container.appendChild(detail);
+      showNeoDetail(chord, v, rootedName);
     }
-  }
+  });
 }
 
 function showNeoDetail(chord, v, name) {
@@ -2600,32 +2604,44 @@ let playbackLoop    = false;  // loop flag
 let playbackMode    = 'strum'; // 'strum' | 'travis' | 'boomchick' | 'waltz' | 'arpeggio'
 
 function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  return audioCtx;
+  if (!audioCtx) {
+    audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
+    reverbNode = null;
+    reverbCtx  = null;
+  }
+  return audioCtx; // resume handled by callers via resumeAndPlay()
+}
+
+// Always use this to play — ensures context is running before scheduling notes
+function resumeAndPlay(fn) {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') {
+    ctx.resume().then(fn);
+  } else {
+    fn();
+  }
 }
 
 function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
 const STRING_MIDI = [40, 45, 50, 55, 59, 64]; // E2 A2 D3 G3 B3 e4
 
 // ── Reverb — built entirely from code, no audio files ────────────
-// Creates a synthetic impulse response that simulates a small wooden room/body.
-// This is the key to warmth — reverb makes individual notes blend and breathe.
 let reverbNode = null;
+let reverbCtx  = null; // track which context the reverb was built for
 
 function getReverbNode() {
-  if (reverbNode) return reverbNode;
-  const ctx        = getAudioCtx();
+  const ctx = getAudioCtx();
+  // Rebuild if never created or if the AudioContext was recreated
+  if (reverbNode && reverbCtx === ctx) return reverbNode;
+
   const sampleRate = ctx.sampleRate;
-  const length     = sampleRate * 1.8; // 1.8 second reverb tail
+  const length     = sampleRate * 1.8;
   const impulse    = ctx.createBuffer(2, length, sampleRate);
 
   for (let ch = 0; ch < 2; ch++) {
     const data = impulse.getChannelData(ch);
     for (let i = 0; i < length; i++) {
-      // Exponentially decaying noise — models reflections dying away
-      const decay = Math.pow(1 - i / length, 2.2);
-      // Early reflections are stronger, late tail is diffuse
+      const decay      = Math.pow(1 - i / length, 2.2);
       const earlyBoost = i < sampleRate * 0.04 ? 2.0 : 1.0;
       data[i] = (Math.random() * 2 - 1) * decay * earlyBoost;
     }
@@ -2634,13 +2650,13 @@ function getReverbNode() {
   const convolver  = ctx.createConvolver();
   convolver.buffer = impulse;
 
-  // Wet/dry mix: convolver is wet, connect both to output
   const wetGain = ctx.createGain();
-  wetGain.gain.value = 0.22; // 22% wet — enough warmth without muddiness
+  wetGain.gain.value = 0.22;
   convolver.connect(wetGain);
   wetGain.connect(ctx.destination);
 
   reverbNode = convolver;
+  reverbCtx  = ctx;
   return reverbNode;
 }
 
@@ -2707,63 +2723,73 @@ function getMidiNotes(voicing) {
 
 // Strum: low to high with slight delay per string
 function strumChord(voicing, baseFret) {
-  const ctx  = getAudioCtx();
-  const now  = ctx.currentTime;
-  const notes = getMidiNotes(voicing);
-  notes.forEach((midi, i) => playNote(midiToFreq(midi), now + i * 0.032, 1.4));
+  resumeAndPlay(() => {
+    const ctx   = getAudioCtx();
+    const now   = ctx.currentTime;
+    const notes = getMidiNotes(voicing);
+    notes.forEach((midi, i) => playNote(midiToFreq(midi), now + i * 0.032, 1.4));
+  });
 }
 
 // Travis pick pattern: Bass → 3 → 2 → 1 → Bass → 3 → 2 → 1
 // Travis pick: Bass → treble → mid → treble × 2 (classic Merle Travis/Chet Atkins pattern)
 function travisPick(voicing, beatDuration) {
-  const ctx   = getAudioCtx();
-  const now   = ctx.currentTime;
-  const notes = voicing.map((fret, si) => fret === null ? null : STRING_MIDI[si] + fret);
-  const bassIdx = notes.reduce((bi, n, i) => (n !== null && (bi === -1 || notes[bi] === null || n < notes[bi])) ? i : bi, -1);
-  const treble  = [3, 4, 5].filter(i => notes[i] !== null);
-  if (bassIdx === -1 || treble.length < 2) { strumChord(voicing, 1); return; }
-  const step = beatDuration / 8;
-  const pat  = [bassIdx, treble[0], treble[1] ?? treble[0], treble[0],
-                bassIdx, treble[0], treble[1] ?? treble[0], treble[0]];
-  pat.forEach((si, i) => {
-    if (notes[si] !== null) playNote(midiToFreq(notes[si]), now + i * step, step * 1.8, 0.15);
+  resumeAndPlay(() => {
+    const ctx   = getAudioCtx();
+    const now   = ctx.currentTime;
+    const notes = voicing.map((fret, si) => fret === null ? null : STRING_MIDI[si] + fret);
+    const bassIdx = notes.reduce((bi, n, i) => (n !== null && (bi === -1 || notes[bi] === null || n < notes[bi])) ? i : bi, -1);
+    const treble  = [3, 4, 5].filter(i => notes[i] !== null);
+    if (bassIdx === -1 || treble.length < 2) { strumChord(voicing, 1); return; }
+    const step = beatDuration / 8;
+    const pat  = [bassIdx, treble[0], treble[1] ?? treble[0], treble[0],
+                  bassIdx, treble[0], treble[1] ?? treble[0], treble[0]];
+    pat.forEach((si, i) => {
+      if (notes[si] !== null) playNote(midiToFreq(notes[si]), now + i * step, step * 1.8, 0.15);
+    });
   });
 }
 
 // Boom-Chick: single bass note on 1, strum treble on 2 (country/folk rhythm)
 function boomChick(voicing, beatDuration) {
-  const ctx   = getAudioCtx();
-  const now   = ctx.currentTime;
-  const notes = voicing.map((fret, si) => fret === null ? null : STRING_MIDI[si] + fret);
-  const bassIdx = notes.reduce((bi, n, i) => (n !== null && (bi === -1 || notes[bi] === null || n < notes[bi])) ? i : bi, -1);
-  const treble  = notes.slice(2).filter(Boolean);
-  if (bassIdx !== -1 && notes[bassIdx] !== null)
-    playNote(midiToFreq(notes[bassIdx]), now, beatDuration * 0.45, 0.22);
-  treble.forEach((midi, i) =>
-    playNote(midiToFreq(midi), now + beatDuration * 0.5 + i * 0.018, beatDuration * 0.4, 0.12));
+  resumeAndPlay(() => {
+    const ctx   = getAudioCtx();
+    const now   = ctx.currentTime;
+    const notes = voicing.map((fret, si) => fret === null ? null : STRING_MIDI[si] + fret);
+    const bassIdx = notes.reduce((bi, n, i) => (n !== null && (bi === -1 || notes[bi] === null || n < notes[bi])) ? i : bi, -1);
+    const treble  = notes.slice(2).filter(Boolean);
+    if (bassIdx !== -1 && notes[bassIdx] !== null)
+      playNote(midiToFreq(notes[bassIdx]), now, beatDuration * 0.45, 0.22);
+    treble.forEach((midi, i) =>
+      playNote(midiToFreq(midi), now + beatDuration * 0.5 + i * 0.018, beatDuration * 0.4, 0.12));
+  });
 }
 
 // Waltz: bass on beat 1, chord strum on beats 2 & 3 (3/4 feel)
 function waltzPick(voicing, beatDuration) {
-  const ctx   = getAudioCtx();
-  const now   = ctx.currentTime;
-  const notes = voicing.map((fret, si) => fret === null ? null : STRING_MIDI[si] + fret);
-  const bassIdx = notes.reduce((bi, n, i) => (n !== null && (bi === -1 || notes[bi] === null || n < notes[bi])) ? i : bi, -1);
-  const treble  = notes.filter((n, i) => n !== null && i >= 2);
-  const beat    = beatDuration / 3;
-  if (bassIdx !== -1 && notes[bassIdx] !== null)
-    playNote(midiToFreq(notes[bassIdx]), now, beat * 1.6, 0.20);
-  [1, 2].forEach(b => treble.forEach((midi, i) =>
-    playNote(midiToFreq(midi), now + b * beat + i * 0.015, beat * 1.4, 0.11)));
+  resumeAndPlay(() => {
+    const ctx   = getAudioCtx();
+    const now   = ctx.currentTime;
+    const notes = voicing.map((fret, si) => fret === null ? null : STRING_MIDI[si] + fret);
+    const bassIdx = notes.reduce((bi, n, i) => (n !== null && (bi === -1 || notes[bi] === null || n < notes[bi])) ? i : bi, -1);
+    const treble  = notes.filter((n, i) => n !== null && i >= 2);
+    const beat    = beatDuration / 3;
+    if (bassIdx !== -1 && notes[bassIdx] !== null)
+      playNote(midiToFreq(notes[bassIdx]), now, beat * 1.6, 0.20);
+    [1, 2].forEach(b => treble.forEach((midi, i) =>
+      playNote(midiToFreq(midi), now + b * beat + i * 0.015, beat * 1.4, 0.11)));
+  });
 }
 
 // Arpeggio: ascending string by string across the beat
 function arpeggio(voicing, beatDuration) {
-  const ctx   = getAudioCtx();
-  const now   = ctx.currentTime;
-  const notes = getMidiNotes(voicing);
-  const step  = beatDuration / notes.length;
-  notes.forEach((midi, i) => playNote(midiToFreq(midi), now + i * step, beatDuration * 0.9, 0.16));
+  resumeAndPlay(() => {
+    const ctx   = getAudioCtx();
+    const now   = ctx.currentTime;
+    const notes = getMidiNotes(voicing);
+    const step  = beatDuration / notes.length;
+    notes.forEach((midi, i) => playNote(midiToFreq(midi), now + i * step, beatDuration * 0.9, 0.16));
+  });
 }
 
 function playChordWithMode(voicing, beatDuration) {
@@ -2874,7 +2900,9 @@ function strumProgression(voicings, baseFrets, btnId) {
       if (pillEl) pillEl.classList.add('playing-now');
     }
 
-    playChordWithMode(voicings[index], beatMs / 1000);
+    resumeAndPlay(() => {
+      playChordWithMode(voicings[index], beatMs / 1000);
+    });
     activePlayback[btnId] = setTimeout(() => playChordAt(index + 1), beatMs);
   }
 
