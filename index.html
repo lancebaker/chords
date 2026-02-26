@@ -2603,23 +2603,52 @@ let playbackBpm     = 80;     // global BPM
 let playbackLoop    = false;  // loop flag
 let playbackMode    = 'strum'; // 'strum' | 'travis' | 'boomchick' | 'waltz' | 'arpeggio'
 
+// ── iOS Audio unlock ─────────────────────────────────────────
+// iOS Safari requires the AudioContext to be both created AND
+// "warmed up" with a silent buffer inside a synchronous user gesture.
+// We do this on the very first touch anywhere in the app so that
+// every subsequent strum/play call works immediately.
+let audioUnlocked = false;
+
+function unlockAudioOnFirstTouch() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+
+  const ctx = getAudioCtx();
+
+  // Play a zero-length silent buffer — this is the iOS unlock gesture
+  const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx.destination);
+  src.start(0);
+
+  // Resume synchronously — must happen inside the gesture handler
+  if (ctx.state === 'suspended') ctx.resume();
+}
+
+document.addEventListener('touchstart', unlockAudioOnFirstTouch, { once: true, passive: true });
+document.addEventListener('mousedown',  unlockAudioOnFirstTouch, { once: true, passive: true });
+
 function getAudioCtx() {
   if (!audioCtx) {
     audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
     reverbNode = null;
     reverbCtx  = null;
   }
-  return audioCtx; // resume handled by callers via resumeAndPlay()
+  return audioCtx;
 }
 
-// Always use this to play — ensures context is running before scheduling notes
+// resumeAndPlay — starts audio immediately (synchronous) and also
+// calls resume() in case context is suspended. Does NOT gate on .then()
+// because iOS blocks audio scheduled inside async callbacks.
 function resumeAndPlay(fn) {
   const ctx = getAudioCtx();
-  if (ctx.state === 'suspended') {
-    ctx.resume().then(fn);
-  } else {
-    fn();
-  }
+  // Always call resume — it's safe to call even if already running
+  if (ctx.state === 'suspended') ctx.resume();
+  // Schedule synchronously — Web Audio will play once context runs
+  // Notes scheduled slightly in the future (handled by callers with now + offset)
+  fn();
 }
 
 function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
@@ -2725,7 +2754,7 @@ function getMidiNotes(voicing) {
 function strumChord(voicing, baseFret) {
   resumeAndPlay(() => {
     const ctx   = getAudioCtx();
-    const now   = ctx.currentTime;
+    const now   = ctx.currentTime + 0.05; // 50ms buffer — gives iOS context time to start ticking
     const notes = getMidiNotes(voicing);
     notes.forEach((midi, i) => playNote(midiToFreq(midi), now + i * 0.032, 1.4));
   });
@@ -2736,7 +2765,7 @@ function strumChord(voicing, baseFret) {
 function travisPick(voicing, beatDuration) {
   resumeAndPlay(() => {
     const ctx   = getAudioCtx();
-    const now   = ctx.currentTime;
+    const now   = ctx.currentTime + 0.05;
     const notes = voicing.map((fret, si) => fret === null ? null : STRING_MIDI[si] + fret);
     const bassIdx = notes.reduce((bi, n, i) => (n !== null && (bi === -1 || notes[bi] === null || n < notes[bi])) ? i : bi, -1);
     const treble  = [3, 4, 5].filter(i => notes[i] !== null);
@@ -2754,7 +2783,7 @@ function travisPick(voicing, beatDuration) {
 function boomChick(voicing, beatDuration) {
   resumeAndPlay(() => {
     const ctx   = getAudioCtx();
-    const now   = ctx.currentTime;
+    const now   = ctx.currentTime + 0.05;
     const notes = voicing.map((fret, si) => fret === null ? null : STRING_MIDI[si] + fret);
     const bassIdx = notes.reduce((bi, n, i) => (n !== null && (bi === -1 || notes[bi] === null || n < notes[bi])) ? i : bi, -1);
     const treble  = notes.slice(2).filter(Boolean);
@@ -2769,7 +2798,7 @@ function boomChick(voicing, beatDuration) {
 function waltzPick(voicing, beatDuration) {
   resumeAndPlay(() => {
     const ctx   = getAudioCtx();
-    const now   = ctx.currentTime;
+    const now   = ctx.currentTime + 0.05;
     const notes = voicing.map((fret, si) => fret === null ? null : STRING_MIDI[si] + fret);
     const bassIdx = notes.reduce((bi, n, i) => (n !== null && (bi === -1 || notes[bi] === null || n < notes[bi])) ? i : bi, -1);
     const treble  = notes.filter((n, i) => n !== null && i >= 2);
@@ -2785,7 +2814,7 @@ function waltzPick(voicing, beatDuration) {
 function arpeggio(voicing, beatDuration) {
   resumeAndPlay(() => {
     const ctx   = getAudioCtx();
-    const now   = ctx.currentTime;
+    const now   = ctx.currentTime + 0.05;
     const notes = getMidiNotes(voicing);
     const step  = beatDuration / notes.length;
     notes.forEach((midi, i) => playNote(midiToFreq(midi), now + i * step, beatDuration * 0.9, 0.16));
