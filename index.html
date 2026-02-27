@@ -731,6 +731,29 @@
   .key-result-mode { font-size:0.72rem; color:var(--muted); }
   .key-result-matches { font-size:0.78rem; color:var(--cream); margin-top:0.25rem; font-family:'Crimson Pro',serif; }
   .key-result-outside { font-size:0.75rem; color:var(--mute-red); font-family:'Crimson Pro',serif; font-style:italic; }
+  /* ── SECTION TOGGLE (A / B part) ── */
+  .section-toggle {
+    display: flex; align-items: center; gap: 0; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;
+  }
+  .section-label-txt {
+    font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--muted); white-space: nowrap;
+  }
+  .section-btn-wrap { display: inline-flex; }
+  .section-btn {
+    padding: 0.35rem 0.85rem; border: 1px solid var(--border);
+    background: transparent; color: var(--muted);
+    font-family: 'DM Mono', monospace; font-size: 0.72rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .section-btn + .section-btn { border-left: none; }
+  .section-btn.active { background: var(--gold); border-color: var(--gold); color: var(--bg); font-weight: 600; }
+  .section-desc {
+    font-family: 'Crimson Pro', serif; font-size: 0.88rem; color: var(--muted);
+    font-style: italic; margin-bottom: 0.75rem; line-height: 1.5;
+  }
+
   .transition-tip {
     margin-top: 0.85rem; padding: 0.75rem 1rem;
     background: var(--surface); border-left: 2px solid var(--tab-jazz);
@@ -815,7 +838,7 @@
     <div class="help-item"><div class="help-icon">⬡</div><div class="help-text"><strong>Capo Finder</strong> — On the Chords tab, expand the Capo Finder. Choose a shape and a target key — it tells you exactly which fret to place your capo, and suggests alternative shapes with lower capo positions.</div></div>
 
     <div class="help-section-title">Audio</div>
-    <div class="help-item"><div class="help-icon">🔊</div><div class="help-text">Audio uses the Web Audio API — no downloads required. Tap <strong>▶ Strum</strong> on any chord detail to hear a single chord. For iOS, audio activates on the first tap. Keep your device volume up.</div></div>
+    <div class="help-item"><div class="help-icon">🔊</div><div class="help-text">Audio uses the Web Audio API — no downloads required. Tap <strong>▶ Strum</strong> on any chord detail to hear a single chord. For iOS, audio activates on the first tap. <strong>Note:</strong> on iPhone, the side silent switch will mute audio. This is an iOS browser limitation — when published as an app via Capacitor, audio will play through silent mode like any music app.</div></div>
   </div>
 </div>
 
@@ -1340,47 +1363,81 @@ const OPEN_CHORD_DB = {
 // ── TAB 2: PROGRESSIONS ─────────────────────────────────────────
 const PROGRESSIONS = [
   // CLASSIC
-  { id:'I-V-vi-IV',   name:'I–V–vi–IV',   desc:'Four chords, infinite pop songs', genre:'Pop / Rock', feel:'Uplifting, familiar', example:'Let Her Go — Passenger / Someone Like You — Adele', degrees:['I','V','vi','IV'], steps:[0,7,9,5], cat:'classic' },
-  { id:'I-IV-V',      name:'I–IV–V',       desc:'12-bar blues — raw and driving', genre:'Blues / Rock', feel:'Raw, driving', example:'Johnny B. Goode — Chuck Berry / La Bamba — Ritchie Valens', degrees:['I','IV','V'], steps:[0,5,7], cat:'classic' },
-  { id:'I-vi-IV-V',   name:'I–vi–IV–V',    desc:'Doo-wop and classic ballads', genre:'Pop / Ballad', feel:'Nostalgic, smooth', example:'Stand By Me — Ben E. King / Every Breath You Take — The Police', degrees:['I','vi','IV','V'], steps:[0,9,5,7], cat:'classic' },
-  { id:'ii-V-I',      name:'ii–V–I',       desc:'The fundamental jazz cadence', genre:'Jazz / Pop', feel:'Sophisticated, resolving', example:'Fly Me to the Moon — Frank Sinatra / Autumn Leaves — Nat King Cole', degrees:['ii','V','I'], steps:[2,7,0], mixedQ:['minor','major','major'], cat:'classic' },
-  { id:'I-iii-IV-V',  name:'I–iii–IV–V',   desc:'Classic rock build with the iii chord', genre:'Rock / Folk', feel:'Building, anthemic', example:'Brown Eyed Girl — Van Morrison / I Can\'t Help Myself — Four Tops', degrees:['I','iii','IV','V'], steps:[0,4,5,7], cat:'classic' },
+  { id:'I-V-vi-IV',   name:'I–V–vi–IV',   desc:'Four chords, infinite pop songs', genre:'Pop / Rock', feel:'Uplifting, familiar', example:'Let Her Go — Passenger / Someone Like You — Adele', degrees:['I','V','vi','IV'], steps:[0,7,9,5], cat:'classic',
+    bSection:{ name:'IV–I–V–vi', desc:'The same four chords starting on IV — shifts the emotional weight, feels like a pre-chorus lift', degrees:['IV','I','V','vi'], steps:[5,0,7,9] } },
+  { id:'I-IV-V',      name:'I–IV–V',       desc:'12-bar blues — raw and driving', genre:'Blues / Rock', feel:'Raw, driving', example:'Johnny B. Goode — Chuck Berry / La Bamba — Ritchie Valens', degrees:['I','IV','V'], steps:[0,5,7], cat:'classic',
+    bSection:{ name:'I–IV–I–V', desc:'Add the IV back under the I for a quick-change turnaround — classic blues bridge move', degrees:['I','IV','I','V'], steps:[0,5,0,7] } },
+  { id:'I-vi-IV-V',   name:'I–vi–IV–V',    desc:'Doo-wop and classic ballads', genre:'Pop / Ballad', feel:'Nostalgic, smooth', example:'Stand By Me — Ben E. King / Every Breath You Take — The Police', degrees:['I','vi','IV','V'], steps:[0,9,5,7], cat:'classic',
+    bSection:{ name:'IV–V–I–vi', desc:'Start on the IV for a classic bridge lift — feels like the song is cresting', degrees:['IV','V','I','vi'], steps:[5,7,0,9] } },
+  { id:'ii-V-I',      name:'ii–V–I',       desc:'The fundamental jazz cadence', genre:'Jazz / Pop', feel:'Sophisticated, resolving', example:'Fly Me to the Moon — Frank Sinatra / Autumn Leaves — Nat King Cole', degrees:['ii','V','I'], steps:[2,7,0], mixedQ:['minor','major','major'], cat:'classic',
+    bSection:{ name:'IV–V–iii–vi', desc:'Diatonic walkdown from IV — a lush alternative turnaround that extends the journey before resolving', degrees:['IV','V','iii','vi'], steps:[5,7,4,9], mixedQ:['major','major','minor','minor'] } },
+  { id:'I-iii-IV-V',  name:'I–iii–IV–V',   desc:'Classic rock build with the iii chord', genre:'Rock / Folk', feel:'Building, anthemic', example:'Brown Eyed Girl — Van Morrison / I Can\'t Help Myself — Four Tops', degrees:['I','iii','IV','V'], steps:[0,4,5,7], cat:'classic',
+    bSection:{ name:'vi–IV–I–V', desc:'Relative minor start — the classic anthemic chorus move, feels bigger and more emotional', degrees:['vi','IV','I','V'], steps:[9,5,0,7] } },
   // FOLK
-  { id:'I-IV-I-V',    name:'I–IV–I–V',     desc:'Folk circle — the heart of ballads', genre:'Folk / Americana', feel:'Warm, grounded', example:'Home on the Range (trad.) / Will the Circle Be Unbroken (trad.)', degrees:['I','IV','I','V'], steps:[0,5,0,7], cat:'folk' },
-  { id:'vi-V-IV-I',   name:'vi–V–IV–I',    desc:'Descending folk cadence', genre:'Folk / Ballad', feel:'Poignant, elegiac', example:'Stairway to Heaven (intro) — Led Zeppelin / Hotel California — Eagles', degrees:['vi','V','IV','I'], steps:[9,7,5,0], cat:'folk' },
-  { id:'I-iii-IV-I',  name:'I–iii–IV–I',   desc:'Wistful iii chord — Celtic and English folk', genre:'Celtic / Folk', feel:'Wistful, pastoral', example:'The Boxer — Simon & Garfunkel / Scarborough Fair — Simon & Garfunkel', degrees:['I','iii','IV','I'], steps:[0,4,5,0], cat:'folk' },
-  { id:'I-bVII-IV-I', name:'I–♭VII–IV–I',  desc:'Mixolydian folk — pre-tonal, ancient-sounding', genre:'British Folk / Folk-Rock', feel:'Modal, earthy', example:'Sweet Home Alabama — Lynyrd Skynyrd / Here Comes the Sun — The Beatles', degrees:['I','♭VII','IV','I'], steps:[0,10,5,0], cat:'folk' },
+  { id:'I-IV-I-V',    name:'I–IV–I–V',     desc:'Folk circle — the heart of ballads', genre:'Folk / Americana', feel:'Warm, grounded', example:'Home on the Range (trad.) / Will the Circle Be Unbroken (trad.)', degrees:['I','IV','I','V'], steps:[0,5,0,7], cat:'folk',
+    bSection:{ name:'I–V–IV–I', desc:'Reverse the IV and V — creates a gentle descending motion, good for a quieter bridge passage', degrees:['I','V','IV','I'], steps:[0,7,5,0] } },
+  { id:'vi-V-IV-I',   name:'vi–V–IV–I',    desc:'Descending folk cadence', genre:'Folk / Ballad', feel:'Poignant, elegiac', example:'Stairway to Heaven (intro) — Led Zeppelin / Hotel California — Eagles', degrees:['vi','V','IV','I'], steps:[9,7,5,0], cat:'folk',
+    bSection:{ name:'I–IV–vi–V', desc:'Ascend from I before the turn — lifts into major territory before falling back, classic folk verse-chorus contrast', degrees:['I','IV','vi','V'], steps:[0,5,9,7] } },
+  { id:'I-iii-IV-I',  name:'I–iii–IV–I',   desc:'Wistful iii chord — Celtic and English folk', genre:'Celtic / Folk', feel:'Wistful, pastoral', example:'The Boxer — Simon & Garfunkel / Scarborough Fair — Simon & Garfunkel', degrees:['I','iii','IV','I'], steps:[0,4,5,0], cat:'folk',
+    bSection:{ name:'vi–iii–IV–V', desc:'Drop to the vi for a more melancholic bridge — delays resolution to the I, stretches the emotion', degrees:['vi','iii','IV','V'], steps:[9,4,5,7] } },
+  { id:'I-bVII-IV-I', name:'I–♭VII–IV–I',  desc:'Mixolydian folk — pre-tonal, ancient-sounding', genre:'British Folk / Folk-Rock', feel:'Modal, earthy', example:'Sweet Home Alabama — Lynyrd Skynyrd / Here Comes the Sun — The Beatles', degrees:['I','♭VII','IV','I'], steps:[0,10,5,0], cat:'folk',
+    bSection:{ name:'IV–♭VII–I–♭VII', desc:'Linger on the IV before the modal ♭VII — doubles down on the Mixolydian flavour, earthier and more cyclical', degrees:['IV','♭VII','I','♭VII'], steps:[5,10,0,10] } },
   // DARK
-  { id:'i-bVII-bVI-bVII', name:'i–♭VII–♭VI–♭VII', desc:'Andalusian cadence — dramatic and inevitable', genre:'Dark Folk / Flamenco', feel:'Ancient, dramatic', example:'Hit the Road Jack — Ray Charles / Stairway to Heaven (main riff) — Led Zeppelin', degrees:['i','♭VII','♭VI','♭VII'], steps:[0,10,8,10], minor:true, cat:'dark' },
-  { id:'i-iv-v',          name:'i–iv–v',           desc:'Pure natural minor — no resolution', genre:'Gothic Folk / Drone', feel:'Unresolved, haunting', example:'House of the Rising Sun — The Animals / Scarborough Fair (trad.)', degrees:['i','iv','v'], steps:[0,5,7], minor:true, cat:'dark' },
-  { id:'i-bVI-bIII-bVII', name:'i–♭VI–♭III–♭VII', desc:'Aeolian sweep — cinematic and dark', genre:'Dark Folk / Psych', feel:'Sweeping, melancholic', example:'Believer — Imagine Dragons / Numb — Linkin Park', degrees:['i','♭VI','♭III','♭VII'], steps:[0,8,3,10], minor:true, cat:'dark' },
-  { id:'I-III-IV-iv',     name:'I–III–IV–iv',      desc:'Major to parallel minor — bittersweet turn', genre:'Rock / Film', feel:'Bittersweet, cinematic', example:'Creep — Radiohead / In My Life — The Beatles', degrees:['I','III','IV','iv'], steps:[0,4,5,5], mixedQ:['major','major','major','minor'], cat:'dark' },
-  { id:'i-bII',            name:'i–♭II (Phrygian)', desc:'Half-step tension — ancient mystery', genre:'Flamenco / Dark Folk', feel:'Tense, unyielding', example:'White Zombie — More Human Than Human / Wherever I May Roam — Metallica', degrees:['i','♭II'], steps:[0,1], minor:true, cat:'dark' },
+  { id:'i-bVII-bVI-bVII', name:'i–♭VII–♭VI–♭VII', desc:'Andalusian cadence — dramatic and inevitable', genre:'Dark Folk / Flamenco', feel:'Ancient, dramatic', example:'Hit the Road Jack — Ray Charles / Stairway to Heaven (main riff) — Led Zeppelin', degrees:['i','♭VII','♭VI','♭VII'], steps:[0,10,8,10], minor:true, cat:'dark',
+    bSection:{ name:'i–iv–♭VII–♭VI', desc:'Drop into the iv for a darker, more resigned passage — trades drama for depth', degrees:['i','iv','♭VII','♭VI'], steps:[0,5,10,8], minor:true } },
+  { id:'i-iv-v',          name:'i–iv–v',           desc:'Pure natural minor — no resolution', genre:'Gothic Folk / Drone', feel:'Unresolved, haunting', example:'House of the Rising Sun — The Animals / Scarborough Fair (trad.)', degrees:['i','iv','v'], steps:[0,5,7], minor:true, cat:'dark',
+    bSection:{ name:'♭VI–♭VII–i', desc:'Borrow ♭VI and ♭VII from Aeolian — the classic dark resolution that never quite resolves', degrees:['♭VI','♭VII','i'], steps:[8,10,0], minor:true } },
+  { id:'i-bVI-bIII-bVII', name:'i–♭VI–♭III–♭VII', desc:'Aeolian sweep — cinematic and dark', genre:'Dark Folk / Psych', feel:'Sweeping, melancholic', example:'Believer — Imagine Dragons / Numb — Linkin Park', degrees:['i','♭VI','♭III','♭VII'], steps:[0,8,3,10], minor:true, cat:'dark',
+    bSection:{ name:'♭III–♭VII–i–iv', desc:'Start on ♭III for an orchestral lift — feels like the emotional peak before coming back down', degrees:['♭III','♭VII','i','iv'], steps:[3,10,0,5], minor:true } },
+  { id:'I-III-IV-iv',     name:'I–III–IV–iv',      desc:'Major to parallel minor — bittersweet turn', genre:'Rock / Film', feel:'Bittersweet, cinematic', example:'Creep — Radiohead / In My Life — The Beatles', degrees:['I','III','IV','iv'], steps:[0,4,5,5], mixedQ:['major','major','major','minor'], cat:'dark',
+    bSection:{ name:'IV–iv–I–V', desc:'The bittersweet iv landing followed by the V pull — heightens the tension before release', degrees:['IV','iv','I','V'], steps:[5,5,0,7], mixedQ:['major','minor','major','major'] } },
+  { id:'i-bII',            name:'i–♭II (Phrygian)', desc:'Half-step tension — ancient mystery', genre:'Flamenco / Dark Folk', feel:'Tense, unyielding', example:'White Zombie — More Human Than Human / Wherever I May Roam — Metallica', degrees:['i','♭II'], steps:[0,1], minor:true, cat:'dark',
+    bSection:{ name:'i–♭II–♭VII–i', desc:'Expand the Phrygian with a ♭VII before resolving — gives the tension somewhere to breathe before returning', degrees:['i','♭II','♭VII','i'], steps:[0,1,10,0], minor:true } },
   // MODAL
-  { id:'dorian-i-IV',      name:'i–IV (Dorian)',    desc:'Dorian mode — minor with a raised 6th', genre:'Jazz / Folk / Rock', feel:'Soulful, spacious', example:'Oye Como Va — Santana / So What — Miles Davis / Scarborough Fair — Simon & Garfunkel', degrees:['i','IV'], steps:[0,5], mixedQ:['minor','major'], cat:'modal' },
-  { id:'mixolydian',       name:'I–♭VII–IV',        desc:'Mixolydian — major with a flat 7', genre:'Folk / Rock / Celtic', feel:'Earthy, modal', example:'Sweet Home Alabama — Lynyrd Skynyrd / Norwegian Wood — The Beatles', degrees:['I','♭VII','IV'], steps:[0,10,5], cat:'modal' },
-  { id:'phrygian',         name:'i–♭II–♭VII',       desc:'Phrygian — dark and Eastern-tinged', genre:'Flamenco / World', feel:'Ancient, mysterious', example:'White Rabbit — Jefferson Airplane / Wherever I May Roam — Metallica', degrees:['i','♭II','♭VII'], steps:[0,1,10], minor:true, cat:'modal' },
-  { id:'lydian',           name:'I–II (Lydian)',     desc:'Lydian — raised 4th creates ethereal ambiguity', genre:'Film / Ambient', feel:'Ethereal, floating', example:'The Simpsons Theme — Danny Elfman / Flying — The Beatles', degrees:['I','II'], steps:[0,2], cat:'modal' },
+  { id:'dorian-i-IV',      name:'i–IV (Dorian)',    desc:'Dorian mode — minor with a raised 6th', genre:'Jazz / Folk / Rock', feel:'Soulful, spacious', example:'Oye Como Va — Santana / So What — Miles Davis / Scarborough Fair — Simon & Garfunkel', degrees:['i','IV'], steps:[0,5], mixedQ:['minor','major'], cat:'modal',
+    bSection:{ name:'i–♭VII–IV–i', desc:'Bring in the ♭VII for a more grounded, earthier passage — mixes Dorian and Mixolydian colour', degrees:['i','♭VII','IV','i'], steps:[0,10,5,0], mixedQ:['minor','major','major','minor'] } },
+  { id:'mixolydian',       name:'I–♭VII–IV',        desc:'Mixolydian — major with a flat 7', genre:'Folk / Rock / Celtic', feel:'Earthy, modal', example:'Sweet Home Alabama — Lynyrd Skynyrd / Norwegian Wood — The Beatles', degrees:['I','♭VII','IV'], steps:[0,10,5], cat:'modal',
+    bSection:{ name:'I–IV–♭VII–IV', desc:'Linger on the IV before the ♭VII pull — creates a longer modal arc, great for instrumental passages', degrees:['I','IV','♭VII','IV'], steps:[0,5,10,5] } },
+  { id:'phrygian',         name:'i–♭II–♭VII',       desc:'Phrygian — dark and Eastern-tinged', genre:'Flamenco / World', feel:'Ancient, mysterious', example:'White Rabbit — Jefferson Airplane / Wherever I May Roam — Metallica', degrees:['i','♭II','♭VII'], steps:[0,1,10], minor:true, cat:'modal',
+    bSection:{ name:'♭VI–♭VII–i', desc:'Classic Aeolian cadence after the Phrygian tension — resolves the Eastern colour into something darker and more familiar', degrees:['♭VI','♭VII','i'], steps:[8,10,0], minor:true } },
+  { id:'lydian',           name:'I–II (Lydian)',     desc:'Lydian — raised 4th creates ethereal ambiguity', genre:'Film / Ambient', feel:'Ethereal, floating', example:'The Simpsons Theme — Danny Elfman / Flying — The Beatles', degrees:['I','II'], steps:[0,2], cat:'modal',
+    bSection:{ name:'I–♭VII–IV–I', desc:'Land on Mixolydian colours for contrast — swaps ethereal floating for something earthier and more resolved', degrees:['I','♭VII','IV','I'], steps:[0,10,5,0] } },
   // NEO-SOUL
-  { id:'ns-Imaj7-vi7-ii7-V9',   name:'Imaj7–vi7–ii7–V9',       desc:'The neo-soul lush loop — every chord extended', genre:'Neo-Soul / R&B', feel:'Lush, sophisticated, warm', example:'Isn\'t She Lovely — Stevie Wonder / Brown Sugar — D\'Angelo', degrees:['Imaj7','vi7','ii7','V9'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'neosoul' },
-  { id:'ns-Imaj9-IV9-iii7-VI9',  name:'Imaj9–IV9–iii7–VI9',     desc:'D\'Angelo/Erykah Badu pillars — stacked colour tones', genre:'Neo-Soul', feel:'Deep, warm, rolling', example:'The Signature — D\'Angelo / Tyrone — Erykah Badu', degrees:['Imaj9','IV9','iii7','VI9'], steps:[0,5,4,9], mixedQ:['maj7','dom7','min7','dom7'], cat:'neosoul' },
-  { id:'ns-i9-iv9-bVII9-bIII',   name:'i9–iv9–♭VII9–♭III',     desc:'Minor neo-soul pool — The Roots and common', genre:'Neo-Soul / Hip-Hop Soul', feel:'Brooding, deep', example:'You Got Me — The Roots / These Walls — Kendrick Lamar', degrees:['i9','iv9','♭VII9','♭III'], steps:[0,5,10,3], mixedQ:['min7','min7','dom7','major'], cat:'neosoul' },
-  { id:'ns-ii7-V9-Imaj7-VI9',    name:'ii7–V9–Imaj7–VI9',       desc:'Jazz-soul turnaround — smooth and sophisticated', genre:'Neo-Soul / Jazz', feel:'Smooth, resolving, warm', example:'Just the Two of Us — Grover Washington Jr. / Knocks Me Off My Feet — Stevie Wonder', degrees:['ii7','V9','Imaj7','VI9'], steps:[2,7,0,9], mixedQ:['min7','dom7','maj7','dom7'], cat:'neosoul' },
-  { id:'ns-Imaj7-III7-vi7-II9',  name:'Imaj7–III7–vi7–II9',     desc:'Neo-soul chromatic descent — cinematic movement', genre:'Neo-Soul / Soul-Jazz', feel:'Cinematic, lush', example:'Overjoyed — Stevie Wonder / Until the End of Time — D\'Angelo', degrees:['Imaj7','III7','vi7','II9'], steps:[0,4,9,2], mixedQ:['maj7','dom7','min7','dom7'], cat:'neosoul' },
-  { id:'ns-vi7-ii7-V7-I6',       name:'vi7–ii7–V7–I6',          desc:'Circle-of-fourths soul loop — Stevie Wonder classic', genre:'Soul / Neo-Soul', feel:'Groove, cyclical', example:'Isn\'t She Lovely — Stevie Wonder / My Cherie Amour — Stevie Wonder', degrees:['vi7','ii7','V7','I6'], steps:[9,2,7,0], mixedQ:['min7','min7','dom7','maj7'], cat:'neosoul' },
+  { id:'ns-Imaj7-vi7-ii7-V9',   name:'Imaj7–vi7–ii7–V9',       desc:'The neo-soul lush loop — every chord extended', genre:'Neo-Soul / R&B', feel:'Lush, sophisticated, warm', example:'Isn\'t She Lovely — Stevie Wonder / Brown Sugar — D\'Angelo', degrees:['Imaj7','vi7','ii7','V9'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'neosoul',
+    bSection:{ name:'IVmaj7–iii7–ii7–V9', desc:'Start on the IV for a floating bridge — delays return to the I, giving the phrase more space', degrees:['IVmaj7','iii7','ii7','V9'], steps:[5,4,2,7], mixedQ:['maj7','min7','min7','dom7'] } },
+  { id:'ns-Imaj9-IV9-iii7-VI9',  name:'Imaj9–IV9–iii7–VI9',     desc:'D\'Angelo/Erykah Badu pillars — stacked colour tones', genre:'Neo-Soul', feel:'Deep, warm, rolling', example:'The Signature — D\'Angelo / Tyrone — Erykah Badu', degrees:['Imaj9','IV9','iii7','VI9'], steps:[0,5,4,9], mixedQ:['maj7','dom7','min7','dom7'], cat:'neosoul',
+    bSection:{ name:'vi9–ii9–V9–Imaj7', desc:'The jazz-soul ii–V resolution — pulls harder toward the I than the A section, perfect for a chorus lift', degrees:['vi9','ii9','V9','Imaj7'], steps:[9,2,7,0], mixedQ:['min7','min7','dom7','maj7'] } },
+  { id:'ns-i9-iv9-bVII9-bIII',   name:'i9–iv9–♭VII9–♭III',     desc:'Minor neo-soul pool — The Roots and common', genre:'Neo-Soul / Hip-Hop Soul', feel:'Brooding, deep', example:'You Got Me — The Roots / These Walls — Kendrick Lamar', degrees:['i9','iv9','♭VII9','♭III'], steps:[0,5,10,3], mixedQ:['min7','min7','dom7','major'], cat:'neosoul',
+    bSection:{ name:'♭VI9–♭VII9–i9–V9', desc:'Sweep up through ♭VI and ♭VII before falling back — the cinematic build that neo-soul borrows from film scoring', degrees:['♭VI9','♭VII9','i9','V9'], steps:[8,10,0,7], mixedQ:['maj7','dom7','min7','dom7'] } },
+  { id:'ns-ii7-V9-Imaj7-VI9',    name:'ii7–V9–Imaj7–VI9',       desc:'Jazz-soul turnaround — smooth and sophisticated', genre:'Neo-Soul / Jazz', feel:'Smooth, resolving, warm', example:'Just the Two of Us — Grover Washington Jr. / Knocks Me Off My Feet — Stevie Wonder', degrees:['ii7','V9','Imaj7','VI9'], steps:[2,7,0,9], mixedQ:['min7','dom7','maj7','dom7'], cat:'neosoul',
+    bSection:{ name:'Imaj7–♭VIImaj7–IV9–V9', desc:'Borrow the ♭VII for a soul-gospel flavour — pulls the harmony out of pure jazz and into something warmer and more soulful', degrees:['Imaj7','♭VIImaj7','IV9','V9'], steps:[0,10,5,7], mixedQ:['maj7','maj7','dom7','dom7'] } },
+  { id:'ns-Imaj7-III7-vi7-II9',  name:'Imaj7–III7–vi7–II9',     desc:'Neo-soul chromatic descent — cinematic movement', genre:'Neo-Soul / Soul-Jazz', feel:'Cinematic, lush', example:'Overjoyed — Stevie Wonder / Until the End of Time — D\'Angelo', degrees:['Imaj7','III7','vi7','II9'], steps:[0,4,9,2], mixedQ:['maj7','dom7','min7','dom7'], cat:'neosoul',
+    bSection:{ name:'IVmaj9–V9–iii7–vi9', desc:'Diatonic upper-structure descent — starts higher and falls gracefully, the classic neo-soul bridge arc', degrees:['IVmaj9','V9','iii7','vi9'], steps:[5,7,4,9], mixedQ:['maj7','dom7','min7','min7'] } },
+  { id:'ns-vi7-ii7-V7-I6',       name:'vi7–ii7–V7–I6',          desc:'Circle-of-fourths soul loop — Stevie Wonder classic', genre:'Soul / Neo-Soul', feel:'Groove, cyclical', example:'Isn\'t She Lovely — Stevie Wonder / My Cherie Amour — Stevie Wonder', degrees:['vi7','ii7','V7','I6'], steps:[9,2,7,0], mixedQ:['min7','min7','dom7','maj7'], cat:'neosoul',
+    bSection:{ name:'IVmaj7–V7–iii7–vi7', desc:'The IV–V–iii–vi walkdown — delays the I landing, stretches the groove and creates a more searching, longing feel', degrees:['IVmaj7','V7','iii7','vi7'], steps:[5,7,4,9], mixedQ:['maj7','dom7','min7','min7'] } },
   // BLUES
-  { id:'blues-12bar',     name:'12-Bar Blues',          desc:'The foundational form of the blues — I, IV, V in a 12-bar cycle', genre:'Blues / Rock', feel:'Raw, soulful, grounded', example:'Sweet Home Chicago — Robert Johnson / Pride and Joy — Stevie Ray Vaughan', degrees:['I7','I7','I7','I7','IV7','IV7','I7','I7','V7','IV7','I7','V7'], steps:[0,0,0,0,5,5,0,0,7,5,0,7], mixedQ:['dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7'], cat:'blues' },
-  { id:'blues-minor',     name:'Minor Blues',            desc:'Natural minor over a blues form — darker, more soulful', genre:'Blues / Soul', feel:'Dark, heavy, soulful', example:'The Thrill Is Gone — B.B. King / Since I\'ve Been Loving You — Led Zeppelin', degrees:['i7','i7','i7','i7','iv7','iv7','i7','i7','v7','iv7','i7','v7'], steps:[0,0,0,0,5,5,0,0,7,5,0,7], mixedQ:['min7','min7','min7','min7','min7','min7','min7','min7','min7','min7','min7','min7'], cat:'blues' },
-  { id:'blues-quick',     name:'Quick-Change Blues',     desc:'IV chord appears in bar 2 for extra early motion', genre:'Blues / Jump Jazz', feel:'Bouncy, driving', example:'Everyday I Have the Blues — B.B. King / Mannish Boy — Muddy Waters', degrees:['I7','IV7','I7','I7','IV7','IV7','I7','I7','V7','IV7','I7','V7'], steps:[0,5,0,0,5,5,0,0,7,5,0,7], mixedQ:['dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7'], cat:'blues' },
+  { id:'blues-12bar',     name:'12-Bar Blues',          desc:'The foundational form of the blues — I, IV, V in a 12-bar cycle', genre:'Blues / Rock', feel:'Raw, soulful, grounded', example:'Sweet Home Chicago — Robert Johnson / Pride and Joy — Stevie Ray Vaughan', degrees:['I7','I7','I7','I7','IV7','IV7','I7','I7','V7','IV7','I7','V7'], steps:[0,0,0,0,5,5,0,0,7,5,0,7], mixedQ:['dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7'], cat:'blues',
+    bSection:{ name:'8-Bar Blues (I–IV–I–V)', desc:'The stripped 8-bar form — tighter and more urgent, great for a solo or instrumental break', degrees:['I7','IV7','I7','I7','IV7','V7','I7','V7'], steps:[0,5,0,0,5,7,0,7], mixedQ:['dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7'] } },
+  { id:'blues-minor',     name:'Minor Blues',            desc:'Natural minor over a blues form — darker, more soulful', genre:'Blues / Soul', feel:'Dark, heavy, soulful', example:'The Thrill Is Gone — B.B. King / Since I\'ve Been Loving You — Led Zeppelin', degrees:['i7','i7','i7','i7','iv7','iv7','i7','i7','v7','iv7','i7','v7'], steps:[0,0,0,0,5,5,0,0,7,5,0,7], mixedQ:['min7','min7','min7','min7','min7','min7','min7','min7','min7','min7','min7','min7'], cat:'blues',
+    bSection:{ name:'Minor Turnaround (i–♭VI–♭VII–i)', desc:'Aeolian turnaround instead of V7 — darker and more resigned, no blues tension, just minor sadness', degrees:['i7','♭VI','♭VII','i'], steps:[0,8,10,0], mixedQ:['min7','major','major','min7'] } },
+  { id:'blues-quick',     name:'Quick-Change Blues',     desc:'IV chord appears in bar 2 for extra early motion', genre:'Blues / Jump Jazz', feel:'Bouncy, driving', example:'Everyday I Have the Blues — B.B. King / Mannish Boy — Muddy Waters', degrees:['I7','IV7','I7','I7','IV7','IV7','I7','I7','V7','IV7','I7','V7'], steps:[0,5,0,0,5,5,0,0,7,5,0,7], mixedQ:['dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7','dom7'], cat:'blues',
+    bSection:{ name:'Jazz Blues Bridge (ii7–V7–I–IV)', desc:'Substitute the V7 bar with ii–V jazz changes — sophisticates the turnaround, bridges blues and jazz', degrees:['ii7','V7','I7','IV7'], steps:[2,7,0,5], mixedQ:['min7','dom7','dom7','dom7'] } },
   // GOSPEL
-  { id:'gospel-I-IV-I-V', name:'I–IV–I–V (Gospel)',     desc:'Gospel staple — simple, powerful, full of the Spirit', genre:'Gospel / Soul', feel:'Uplifting, devotional, powerful', example:'Oh Happy Day — Edwin Hawkins / Amazing Grace (trad.)', degrees:['I','IV','I','V'], steps:[0,5,0,7], cat:'gospel' },
-  { id:'gospel-plagal',   name:'IV–I (Plagal "Amen")',   desc:'The Amen cadence — resolution through the subdominant, timeless in church music', genre:'Gospel / Hymn', feel:'Sacred, resolved, open', example:'Amen (trad.) / Lean on Me — Bill Withers', degrees:['IV','I'], steps:[0,5], cat:'gospel' },
-  { id:'gospel-bVII-IV-I',name:'I–♭VII–IV–I (Gospel)',  desc:'Soul-gospel lift — the borrowed ♭VII adds a jubilant modal flavour', genre:'Gospel / R&B', feel:'Jubilant, soulful, lifted', example:'I\'ll Take You There — Staple Singers / Higher Ground — Stevie Wonder', degrees:['I','♭VII','IV','I'], steps:[0,10,5,0], cat:'gospel' },
-  { id:'gospel-I-IV-vim', name:'I–IV–vi–♭VII',          desc:'Neo-gospel arc — major foundation with a melancholic vi before the modal ♭VII lift', genre:'Gospel Soul / Neo-Soul', feel:'Bittersweet, soulful, cinematic', example:'A Change Is Gonna Come — Sam Cooke / If You Don\'t Know Me By Now — Harold Melvin', degrees:['I','IV','vi','♭VII'], steps:[0,5,9,10], cat:'gospel' },
+  { id:'gospel-I-IV-I-V', name:'I–IV–I–V (Gospel)',     desc:'Gospel staple — simple, powerful, full of the Spirit', genre:'Gospel / Soul', feel:'Uplifting, devotional, powerful', example:'Oh Happy Day — Edwin Hawkins / Amazing Grace (trad.)', degrees:['I','IV','I','V'], steps:[0,5,0,7], cat:'gospel',
+    bSection:{ name:'I–♭VII–IV–I', desc:'The soul-gospel lift — borrowed ♭VII before the IV surge, jubilant and ecstatic', degrees:['I','♭VII','IV','I'], steps:[0,10,5,0] } },
+  { id:'gospel-plagal',   name:'IV–I (Plagal "Amen")',   desc:'The Amen cadence — resolution through the subdominant, timeless in church music', genre:'Gospel / Hymn', feel:'Sacred, resolved, open', example:'Amen (trad.) / Lean on Me — Bill Withers', degrees:['IV','I'], steps:[0,5], cat:'gospel',
+    bSection:{ name:'ii–V–I', desc:'The full cadential resolution — more harmonic movement into the Amen, jazz-gospel flavour', degrees:['ii','V','I'], steps:[2,7,0], mixedQ:['minor','major','major'] } },
+  { id:'gospel-bVII-IV-I',name:'I–♭VII–IV–I (Gospel)',  desc:'Soul-gospel lift — the borrowed ♭VII adds a jubilant modal flavour', genre:'Gospel / R&B', feel:'Jubilant, soulful, lifted', example:'I\'ll Take You There — Staple Singers / Higher Ground — Stevie Wonder', degrees:['I','♭VII','IV','I'], steps:[0,10,5,0], cat:'gospel',
+    bSection:{ name:'vi–IV–♭VII–I', desc:'Minor vi as the bridge start gives emotional weight before the gospel lift ♭VII lands — deeply soulful arc', degrees:['vi','IV','♭VII','I'], steps:[9,5,10,0] } },
+  { id:'gospel-I-IV-vim', name:'I–IV–vi–♭VII',          desc:'Neo-gospel arc — major foundation with a melancholic vi before the modal ♭VII lift', genre:'Gospel Soul / Neo-Soul', feel:'Bittersweet, soulful, cinematic', example:'A Change Is Gonna Come — Sam Cooke / If You Don\'t Know Me By Now — Harold Melvin', degrees:['I','IV','vi','♭VII'], steps:[0,5,9,10], cat:'gospel',
+    bSection:{ name:'vi–IV–I–V', desc:'Classic gospel turnaround from the vi — drops back to minor emotion before the major resolution', degrees:['vi','IV','I','V'], steps:[9,5,0,7] } },
   // LATIN
-  { id:'latin-bossa',     name:'Bossa Nova (Imaj7–♭IImaj7)', desc:'The classic bossa nova chromatic slide — one of the most beautiful chord movements in any genre', genre:'Bossa Nova / Latin Jazz', feel:'Languid, sophisticated, warm', example:'Girl from Ipanema — Jobim / Corcovado — Jobim', degrees:['Imaj7','♭IImaj7','Imaj7'], steps:[0,1,0], mixedQ:['maj7','maj7','maj7'], cat:'latin' },
-  { id:'latin-flamenco',  name:'Flamenco (i–♭VII–♭VI–V)', desc:'Andalusian cadence with a major V — Flamenco\'s most iconic descending sequence', genre:'Flamenco / Latin', feel:'Dramatic, fiery, ancient', example:'Malagueña (trad.) / Malaguena — Connie Francis', degrees:['i','♭VII','♭VI','V'], steps:[0,10,8,7], mixedQ:['minor','major','major','major'], cat:'latin' },
-  { id:'latin-salsa',     name:'Salsa (i–iv–V–i)',       desc:'The minor tumbao foundation of salsa and son — driving and cyclical', genre:'Salsa / Son / Latin', feel:'Driving, rhythmic, hot', example:'Oye Como Va — Tito Puente / Celia Cruz — La Negra Tiene Tumbao', degrees:['i','iv','V','i'], steps:[0,5,7,0], mixedQ:['minor','minor','major','minor'], cat:'latin' },
+  { id:'latin-bossa',     name:'Bossa Nova (Imaj7–♭IImaj7)', desc:'The classic bossa nova chromatic slide — one of the most beautiful chord movements in any genre', genre:'Bossa Nova / Latin Jazz', feel:'Languid, sophisticated, warm', example:'Girl from Ipanema — Jobim / Corcovado — Jobim', degrees:['Imaj7','♭IImaj7','Imaj7'], steps:[0,1,0], mixedQ:['maj7','maj7','maj7'], cat:'latin',
+    bSection:{ name:'ii7–V7–Imaj7–♭IImaj7', desc:'Bring in the ii–V before the chromatic slide — a jazz-bossa hybrid that adds sophistication and forward motion', degrees:['ii7','V7','Imaj7','♭IImaj7'], steps:[2,7,0,1], mixedQ:['min7','dom7','maj7','maj7'] } },
+  { id:'latin-flamenco',  name:'Flamenco (i–♭VII–♭VI–V)', desc:'Andalusian cadence with a major V — Flamenco\'s most iconic descending sequence', genre:'Flamenco / Latin', feel:'Dramatic, fiery, ancient', example:'Malagueña (trad.) / Malaguena — Connie Francis', degrees:['i','♭VII','♭VI','V'], steps:[0,10,8,7], mixedQ:['minor','major','major','major'], cat:'latin',
+    bSection:{ name:'i–iv–V–i', desc:'Drop into the iv for flamenco\'s secondary cadence — slower burn before the explosive V return', degrees:['i','iv','V','i'], steps:[0,5,7,0], mixedQ:['minor','minor','major','minor'] } },
+  { id:'latin-salsa',     name:'Salsa (i–iv–V–i)',       desc:'The minor tumbao foundation of salsa and son — driving and cyclical', genre:'Salsa / Son / Latin', feel:'Driving, rhythmic, hot', example:'Oye Como Va — Tito Puente / Celia Cruz — La Negra Tiene Tumbao', degrees:['i','iv','V','i'], steps:[0,5,7,0], mixedQ:['minor','minor','major','minor'], cat:'latin',
+    bSection:{ name:'♭VI–♭VII–i–V', desc:'Sweeping ♭VI–♭VII before the tonic return — the Latin montuno contrast section, builds intensity before the drop', degrees:['♭VI','♭VII','i','V'], steps:[8,10,0,7], mixedQ:['major','major','minor','major'] } },
 ];
 
 // ── TAB 3: JAZZ CHORDS ──────────────────────────────────────────
@@ -1453,6 +1510,7 @@ let selectedChordIdx = 0;
 let progFilter     = 'all';
 let progPosition   = 'open';
 let currentProgId  = 'I-V-vi-IV';
+let progSection    = 'a'; // 'a' or 'b' — which section is active
 let jazzFilter     = 'all';
 let jazzRoot       = 'C';
 let jazzSelectedId = null;
@@ -1774,13 +1832,35 @@ function renderProgressions() {
       ${prog.example ? `<div style="font-size:0.72rem;color:var(--muted);font-style:italic;margin-top:0.2rem;font-family:'Crimson Pro',serif">♪ ${prog.example}</div>` : ''}
       <span class="cat-tag tag-${prog.cat}">${prog.cat==='neosoul'?'Neo-Soul':prog.cat.charAt(0).toUpperCase()+prog.cat.slice(1)}</span>
     `;
-    cardDiv.onclick = () => { currentProgId=prog.id; renderProgressions(); closeDrawer(); };
+    cardDiv.onclick = () => { currentProgId=prog.id; progSection='a'; renderProgressions(); closeDrawer(); };
     content.appendChild(cardDiv);
 
     if (isActive) {
       // Expanded detail
       const detail = document.createElement('div');
       detail.className = 'prog-detail';
+
+      // Resolve which section's data to use
+      const hasB    = !!prog.bSection;
+      const section = (hasB && progSection === 'b') ? prog.bSection : prog;
+      const sectionChords = section.steps.map((s, i) => {
+        const ni = (keyIdx + s) % 12;
+        const q  = section.mixedQ ? section.mixedQ[i] : (section.minor ? 'minor' : (['ii','vi','iii','i','iv','v'].includes((section.degrees||[])[i]) ? 'minor' : 'major'));
+        const sym = ['min7','minor'].includes(q) ? 'm' : q==='dom7' ? '7' : q==='maj7' ? 'maj7' : '';
+        return { name: NOTES[ni]+sym, root: NOTES[ni], quality: q, degree: (section.degrees||[])[i]||'' };
+      });
+
+      // Section toggle (only if bSection exists)
+      const sectionToggle = hasB ? `
+        <div class="section-toggle">
+          <span class="section-label-txt">Section</span>
+          <div class="section-btn-wrap">
+            <button class="section-btn${progSection==='a'?' active':''}" onclick="setProgSection('a','${prog.id}')">A — Verse</button>
+            <button class="section-btn${progSection==='b'?' active':''}" onclick="setProgSection('b','${prog.id}')">B — Chorus</button>
+          </div>
+        </div>
+        ${progSection==='b' ? `<div class="section-desc">B: <strong>${prog.bSection.name}</strong> — ${prog.bSection.desc}</div>` : ''}
+      ` : '';
 
       // Position toggle
       const posRow = `<div class="pos-row">
@@ -1789,21 +1869,19 @@ function renderProgressions() {
         <button class="pos-btn${progPosition==='upper'?' active':''}" onclick="setProgPos('upper',this)">Upper Neck</button>
       </div>`;
 
-      const seq = `<div class="prog-sequence">${chords.map((c,i)=>
-        `<div class="seq-chord"><div class="seq-degree">${c.degree}</div><div class="seq-name">${c.name}</div></div>${i<chords.length-1?'<div class="seq-arrow">→</div>':''}`
+      const seq = `<div class="prog-sequence">${sectionChords.map((c,i)=>
+        `<div class="seq-chord"><div class="seq-degree">${c.degree}</div><div class="seq-name">${c.name}</div></div>${i<sectionChords.length-1?'<div class="seq-arrow">→</div>':''}`
       ).join('')}</div>`;
 
       // Info tip
       const tip = `<div class="tips-box" style="margin-bottom:0.85rem">
         <strong>${prog.name}</strong> — ${prog.desc}. Feel: <em>${prog.feel}</em>.<br>
-        In <strong>${key}</strong>: ${chords.map(c=>c.name).join(' → ')}
+        In <strong>${key}</strong>: ${sectionChords.map(c=>c.name).join(' → ')}
         ${prog.example ? `<br><span style="color:var(--gold-light);font-size:0.9rem">♪ ${prog.example}</span>` : ''}
       </div>`;
 
       // Get voicings per chord
-      const allV = getVoicingsForChords(chords);
-
-      // Build a unique ID for this progression's play button
+      const allV = getVoicingsForChords(sectionChords);
       const progPlayId = `play-${prog.id}`;
 
       const diagHtml = `
@@ -1815,7 +1893,7 @@ function renderProgressions() {
             ${buildFretboardSVG(v.voicing, v.baseFret)}
           </div>`).join('')}</div>`;
 
-      detail.innerHTML = posRow + seq + tip + diagHtml;
+      detail.innerHTML = sectionToggle + posRow + seq + tip + diagHtml;
       content.appendChild(detail);
     }
   });
@@ -1829,6 +1907,11 @@ function getVoicingsForChords(chords) {
     const v = lookupChord(c.root, c.quality, pos);
     return { c, v };
   });
+}
+
+function setProgSection(section, progId) {
+  progSection = section;
+  renderProgressions();
 }
 
 function setProgPos(pos, btn) {
@@ -2118,36 +2201,60 @@ function showNeoDetail(chord, v, name) {
 // ════════════════════════════════════════════════════════════════
 const JAZZ_PROGRESSIONS = [
   // STANDARDS
-  { id:'j-ii-V-I-maj',    name:'ii7–V7–Imaj7',          desc:'The fundamental jazz cadence — the DNA of tonal jazz harmony', genre:'Jazz Standard', feel:'Resolving, sophisticated', example:'Autumn Leaves — Miles Davis / There Will Never Be Another You — standard', degrees:['ii7','V7','Imaj7'], steps:[2,7,0], mixedQ:['min7','dom7','maj7'], cat:'standards' },
-  { id:'j-ii-V-I-min',    name:'ii∅–V7b9–im7',          desc:'Minor ii–V–i — darker, more cinematic than its major counterpart', genre:'Jazz / Film Noir', feel:'Tense, dark, resolving', example:'Summertime — Miles Davis / My Funny Valentine — Chet Baker', degrees:['iiø','V7♭9','im7'], steps:[2,7,0], mixedQ:['min7','dom7','min7'], cat:'standards' },
-  { id:'j-rhythm-changes', name:'I–vi–ii–V (Rhythm Changes)', desc:'The A-section of Gershwin\'s "I Got Rhythm" — cornerstone of bebop', genre:'Bebop / Swing', feel:'Swinging, cyclical, bright', example:'Anthropology — Charlie Parker / Oleo — Sonny Rollins', degrees:['Imaj7','vi7','ii7','V7'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'standards' },
-  { id:'j-I-VI-ii-V',     name:'Imaj7–VI7–ii7–V7',      desc:'The jazz turnaround with a secondary dominant VI7 — the "Coltrane" pivot', genre:'Jazz Standard', feel:'Rolling, smooth', example:'All the Things You Are — Jerome Kern / The Lady is a Tramp — Rodgers & Hart', degrees:['Imaj7','VI7','ii7','V7'], steps:[0,9,2,7], mixedQ:['maj7','dom7','min7','dom7'], cat:'standards' },
-  { id:'j-bird-blues',    name:'Jazz Blues (12-bar)',    desc:'Charlie Parker\'s jazz blues form — bebop harmony over a 12-bar skeleton', genre:'Bebop Blues', feel:'Swinging, bluesy, sophisticated', example:'Now\'s the Time — Charlie Parker / Billie\'s Bounce — Charlie Parker', degrees:['I7','IV7','I7','VI7','ii7','V7','I7','V7'], steps:[0,5,0,9,2,7,0,7], mixedQ:['dom7','dom7','dom7','dom7','min7','dom7','dom7','dom7'], cat:'blues' },
-  { id:'j-autumn-changes', name:'I–♭VII7–♭III–♭VII7',  desc:'A classic "Autumn Leaves" style changes — circle of fifths through borrowed chords', genre:'Jazz Ballad', feel:'Autumnal, melancholic, lyrical', example:'Autumn Leaves — Joseph Kosma / Moon River — Henry Mancini', degrees:['Imaj7','IV7','♭VIImaj7','♭VII7'], steps:[0,5,10,10], mixedQ:['maj7','dom7','maj7','dom7'], cat:'standards' },
-  { id:'j-giant-steps',   name:'Imaj7–III7–VImaj7–I7',  desc:'Coltrane\'s "Giant Steps" substitution cycle — three tonal centres a major 3rd apart', genre:'Post-Bop', feel:'Dizzying, dramatic, modern', example:'Giant Steps — John Coltrane / Countdown — John Coltrane', degrees:['Imaj7','III7','VImaj7','I7'], steps:[0,4,9,0], mixedQ:['maj7','dom7','maj7','dom7'], cat:'standards' },
+  { id:'j-ii-V-I-maj',    name:'ii7–V7–Imaj7',          desc:'The fundamental jazz cadence — the DNA of tonal jazz harmony', genre:'Jazz Standard', feel:'Resolving, sophisticated', example:'Autumn Leaves — Miles Davis / There Will Never Be Another You — standard', degrees:['ii7','V7','Imaj7'], steps:[2,7,0], mixedQ:['min7','dom7','maj7'], cat:'standards',
+    bSection:{ name:'Imaj7–VI7–ii7–V7', desc:'The extended turnaround — VI7 secondary dominant adds colour before the ii–V resolution begins again', degrees:['Imaj7','VI7','ii7','V7'], steps:[0,9,2,7], mixedQ:['maj7','dom7','min7','dom7'] } },
+  { id:'j-ii-V-I-min',    name:'ii∅–V7b9–im7',          desc:'Minor ii–V–i — darker, more cinematic than its major counterpart', genre:'Jazz / Film Noir', feel:'Tense, dark, resolving', example:'Summertime — Miles Davis / My Funny Valentine — Chet Baker', degrees:['iiø','V7♭9','im7'], steps:[2,7,0], mixedQ:['min7','dom7','min7'], cat:'standards',
+    bSection:{ name:'♭VImaj7–V7♭9–im7–iv7', desc:'Descend from ♭VI before the altered dominant — richer minor colour, "In a Sentimental Mood" territory', degrees:['♭VImaj7','V7♭9','im7','iv7'], steps:[8,7,0,5], mixedQ:['maj7','dom7','min7','min7'] } },
+  { id:'j-rhythm-changes', name:'I–vi–ii–V (Rhythm Changes)', desc:'The A-section of Gershwin\'s "I Got Rhythm" — cornerstone of bebop', genre:'Bebop / Swing', feel:'Swinging, cyclical, bright', example:'Anthropology — Charlie Parker / Oleo — Sonny Rollins', degrees:['Imaj7','vi7','ii7','V7'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'standards',
+    bSection:{ name:'III7–VI7–II7–V7 (Rhythm B)', desc:'The B section (bridge) of Rhythm Changes — all dominant 7ths descending by 4ths, pure bebop fuel', degrees:['III7','VI7','II7','V7'], steps:[4,9,2,7], mixedQ:['dom7','dom7','dom7','dom7'] } },
+  { id:'j-I-VI-ii-V',     name:'Imaj7–VI7–ii7–V7',      desc:'The jazz turnaround with a secondary dominant VI7 — the "Coltrane" pivot', genre:'Jazz Standard', feel:'Rolling, smooth', example:'All the Things You Are — Jerome Kern / The Lady is a Tramp — Rodgers & Hart', degrees:['Imaj7','VI7','ii7','V7'], steps:[0,9,2,7], mixedQ:['maj7','dom7','min7','dom7'], cat:'standards',
+    bSection:{ name:'IVmaj7–♭VII7–iii7–VI7', desc:'Bridge through the IV before the secondary dominant chain — floats above the home key before snapping back', degrees:['IVmaj7','♭VII7','iii7','VI7'], steps:[5,10,4,9], mixedQ:['maj7','dom7','min7','dom7'] } },
+  { id:'j-bird-blues',    name:'Jazz Blues (12-bar)',    desc:'Charlie Parker\'s jazz blues form — bebop harmony over a 12-bar skeleton', genre:'Bebop Blues', feel:'Swinging, bluesy, sophisticated', example:'Now\'s the Time — Charlie Parker / Billie\'s Bounce — Charlie Parker', degrees:['I7','IV7','I7','VI7','ii7','V7','I7','V7'], steps:[0,5,0,9,2,7,0,7], mixedQ:['dom7','dom7','dom7','dom7','min7','dom7','dom7','dom7'], cat:'blues',
+    bSection:{ name:'I7–♭VII7–♭III7–♭VI7 (Tritone Bridge)', desc:'Replace the V with tritone substitutions — chromatic bass motion descending, ultra-modern bebop feel', degrees:['I7','♭VII7','♭III7','♭VI7'], steps:[0,10,3,8], mixedQ:['dom7','dom7','dom7','dom7'] } },
+  { id:'j-autumn-changes', name:'I–♭VII7–♭III–♭VII7',  desc:'A classic "Autumn Leaves" style changes — circle of fifths through borrowed chords', genre:'Jazz Ballad', feel:'Autumnal, melancholic, lyrical', example:'Autumn Leaves — Joseph Kosma / Moon River — Henry Mancini', degrees:['Imaj7','IV7','♭VIImaj7','♭VII7'], steps:[0,5,10,10], mixedQ:['maj7','dom7','maj7','dom7'], cat:'standards',
+    bSection:{ name:'ii7–V7–im7–iv7', desc:'Minor ii–V into the parallel minor — the classic Autumn Leaves modulation from major to relative minor', degrees:['ii7','V7','im7','iv7'], steps:[2,7,0,5], mixedQ:['min7','dom7','min7','min7'] } },
+  { id:'j-giant-steps',   name:'Imaj7–III7–VImaj7–I7',  desc:'Coltrane\'s "Giant Steps" substitution cycle — three tonal centres a major 3rd apart', genre:'Post-Bop', feel:'Dizzying, dramatic, modern', example:'Giant Steps — John Coltrane / Countdown — John Coltrane', degrees:['Imaj7','III7','VImaj7','I7'], steps:[0,4,9,0], mixedQ:['maj7','dom7','maj7','dom7'], cat:'standards',
+    bSection:{ name:'ii7–V7–♭VIImaj7–♭II7', desc:'The "Countdown" substitution — Coltrane\'s reharmonisation of a standard ii–V with symmetric tritone pivots', degrees:['ii7','V7','♭VIImaj7','♭II7'], steps:[2,7,10,1], mixedQ:['min7','dom7','maj7','dom7'] } },
   // MINOR
-  { id:'j-minor-turnaround', name:'im7–♭VImaj7–ii∅–V7♭9', desc:'Minor key turnaround — complete minor cadence with half-diminished ii', genre:'Jazz / Bossa Nova', feel:'Dark, Latin-tinged, elegant', example:'Black Orpheus (Manhã de Carnaval) / Autumn Leaves (minor section)', degrees:['im7','♭VImaj7','ii∅','V7♭9'], steps:[0,8,2,7], mixedQ:['min7','maj7','min7','dom7'], cat:'minor' },
-  { id:'j-dorian-vamp',   name:'im7–IV7 (Dorian)',       desc:'Modal Dorian vamp — Miles Davis "So What" style, minor with a raised 6th', genre:'Modal Jazz', feel:'Open, spacious, modal', example:'So What — Miles Davis / Milestones — Miles Davis', degrees:['im7','IV7'], steps:[0,5], mixedQ:['min7','dom7'], cat:'modal' },
-  { id:'j-minor-blues',   name:'im7–iv7–♭VII7–♭III',    desc:'Minor blues — slow, deep and soulful. Monk and Miles territory', genre:'Jazz Blues', feel:'Heavy, soulful, dark', example:'Equinox — John Coltrane / Mr. P.C. — John Coltrane', degrees:['im7','iv7','♭VII7','♭III'], steps:[0,5,10,3], mixedQ:['min7','min7','dom7','maj7'], cat:'blues' },
-  { id:'j-in-a-sentimental', name:'♭VImaj7–V7–im7–iv7', desc:'Descending minor cadence — "In a Sentimental Mood" style voice leading', genre:'Jazz Ballad', feel:'Wistful, descending, tender', example:'In a Sentimental Mood — Duke Ellington / Naima — John Coltrane', degrees:['♭VImaj7','V7','im7','iv7'], steps:[8,7,0,5], mixedQ:['maj7','dom7','min7','min7'], cat:'minor' },
+  { id:'j-minor-turnaround', name:'im7–♭VImaj7–ii∅–V7♭9', desc:'Minor key turnaround — complete minor cadence with half-diminished ii', genre:'Jazz / Bossa Nova', feel:'Dark, Latin-tinged, elegant', example:'Black Orpheus (Manhã de Carnaval) / Autumn Leaves (minor section)', degrees:['im7','♭VImaj7','ii∅','V7♭9'], steps:[0,8,2,7], mixedQ:['min7','maj7','min7','dom7'], cat:'minor',
+    bSection:{ name:'im7–iv7–♭VII7–♭III', desc:'Aeolian minor bridge — trades the dramatic V7♭9 for a warmer modal descent, more melancholic than tense', degrees:['im7','iv7','♭VII7','♭III'], steps:[0,5,10,3], mixedQ:['min7','min7','dom7','maj7'] } },
+  { id:'j-dorian-vamp',   name:'im7–IV7 (Dorian)',       desc:'Modal Dorian vamp — Miles Davis "So What" style, minor with a raised 6th', genre:'Modal Jazz', feel:'Open, spacious, modal', example:'So What — Miles Davis / Milestones — Miles Davis', degrees:['im7','IV7'], steps:[0,5], mixedQ:['min7','dom7'], cat:'modal',
+    bSection:{ name:'im7–♭VII7–IV7–im7', desc:'Add the ♭VII before the IV — slightly darker Dorian, more D\'Angelo than Miles Davis, a soulful extension of the vamp', degrees:['im7','♭VII7','IV7','im7'], steps:[0,10,5,0], mixedQ:['min7','dom7','dom7','min7'] } },
+  { id:'j-minor-blues',   name:'im7–iv7–♭VII7–♭III',    desc:'Minor blues — slow, deep and soulful. Monk and Miles territory', genre:'Jazz Blues', feel:'Heavy, soulful, dark', example:'Equinox — John Coltrane / Mr. P.C. — John Coltrane', degrees:['im7','iv7','♭VII7','♭III'], steps:[0,5,10,3], mixedQ:['min7','min7','dom7','maj7'], cat:'blues',
+    bSection:{ name:'ii∅–V7♭9–im7–♭VImaj7', desc:'Minor ii–V–i with the ♭VI landing — jazzes up the turnaround with a half-diminished pull into resolution', degrees:['ii∅','V7♭9','im7','♭VImaj7'], steps:[2,7,0,8], mixedQ:['min7','dom7','min7','maj7'] } },
+  { id:'j-in-a-sentimental', name:'♭VImaj7–V7–im7–iv7', desc:'Descending minor cadence — "In a Sentimental Mood" style voice leading', genre:'Jazz Ballad', feel:'Wistful, descending, tender', example:'In a Sentimental Mood — Duke Ellington / Naima — John Coltrane', degrees:['♭VImaj7','V7','im7','iv7'], steps:[8,7,0,5], mixedQ:['maj7','dom7','min7','min7'], cat:'minor',
+    bSection:{ name:'Imaj7–VI7–ii7–V7', desc:'Pivot to the parallel major — contrast section that lifts out of the minor world before returning, classic Ellington move', degrees:['Imaj7','VI7','ii7','V7'], steps:[0,9,2,7], mixedQ:['maj7','dom7','min7','dom7'] } },
   // MODAL
-  { id:'j-so-what',       name:'im7–♭IImaj7 (Phrygian)', desc:'"So What" / Phrygian modal — two chords a half step apart', genre:'Modal Jazz', feel:'Floating, mysterious, modal', example:'So What — Miles Davis / Impressions — John Coltrane', degrees:['im7','♭IImaj7'], steps:[0,1], mixedQ:['min7','maj7'], cat:'modal' },
-  { id:'j-impressionist', name:'Imaj7–II7–Imaj7–♭VII7',  desc:'Lydian dominant colours — floating, impressionistic harmony', genre:'Jazz / Impressionism', feel:'Ethereal, floating, colourful', example:'Peace Piece — Bill Evans / Maiden Voyage (intro) — Herbie Hancock', degrees:['Imaj7','II7','Imaj7','♭VII7'], steps:[0,2,0,10], mixedQ:['maj7','dom7','maj7','dom7'], cat:'modal' },
-  { id:'j-coltrane-changes', name:'Imaj7–♭IIImaj7–♭VImaj7', desc:'Coltrane substitution — three major 7ths a minor 3rd apart, symmetric', genre:'Post-Bop / Modern', feel:'Symmetrical, dramatic, modern', example:'Giant Steps — John Coltrane / Countdown — John Coltrane', degrees:['Imaj7','♭IIImaj7','♭VImaj7'], steps:[0,3,8], mixedQ:['maj7','maj7','maj7'], cat:'modal' },
+  { id:'j-so-what',       name:'im7–♭IImaj7 (Phrygian)', desc:'"So What" / Phrygian modal — two chords a half step apart', genre:'Modal Jazz', feel:'Floating, mysterious, modal', example:'So What — Miles Davis / Impressions — John Coltrane', degrees:['im7','♭IImaj7'], steps:[0,1], mixedQ:['min7','maj7'], cat:'modal',
+    bSection:{ name:'im7–♭IImaj7–im7 (Up ½ step)', desc:'The "Impressions" move — same two-chord shape shifted up a half step, Coltrane\'s favourite way to extend the modal form', degrees:['im7','♭IImaj7','♯im7','♯♭IImaj7'], steps:[1,2,0,1], mixedQ:['min7','maj7','min7','maj7'] } },
+  { id:'j-impressionist', name:'Imaj7–II7–Imaj7–♭VII7',  desc:'Lydian dominant colours — floating, impressionistic harmony', genre:'Jazz / Impressionism', feel:'Ethereal, floating, colourful', example:'Peace Piece — Bill Evans / Maiden Voyage (intro) — Herbie Hancock', degrees:['Imaj7','II7','Imaj7','♭VII7'], steps:[0,2,0,10], mixedQ:['maj7','dom7','maj7','dom7'], cat:'modal',
+    bSection:{ name:'IVmaj7–♭IVmaj7–Imaj7–V7', desc:'Chromatic slide through IV — Herbie Hancock\'s "Maiden Voyage" B section sound, each major 7th gliding into the next', degrees:['IVmaj7','♭IVmaj7','Imaj7','V7'], steps:[5,4,0,7], mixedQ:['maj7','maj7','maj7','dom7'] } },
+  { id:'j-coltrane-changes', name:'Imaj7–♭IIImaj7–♭VImaj7', desc:'Coltrane substitution — three major 7ths a minor 3rd apart, symmetric', genre:'Post-Bop / Modern', feel:'Symmetrical, dramatic, modern', example:'Giant Steps — John Coltrane / Countdown — John Coltrane', degrees:['Imaj7','♭IIImaj7','♭VImaj7'], steps:[0,3,8], mixedQ:['maj7','maj7','maj7'], cat:'modal',
+    bSection:{ name:'ii7–V7–♭IVmaj7–♭VII7', desc:'Descend through the substitution cycle — the resolution half that Giant Steps implies but rarely states', degrees:['ii7','V7','♭IVmaj7','♭VII7'], steps:[2,7,4,10], mixedQ:['min7','dom7','maj7','dom7'] } },
   // TURNAROUND
-  { id:'j-I-VI-IV-II',    name:'Imaj7–VI7–IVmaj7–II7',  desc:'Extended turnaround — circle of fifths through four chords', genre:'Swing / Bop', feel:'Circular, swinging, propulsive', example:'All the Things You Are — Jerome Kern / Cherokee — Ray Noble', degrees:['Imaj7','VI7','IVmaj7','II7'], steps:[0,9,5,2], mixedQ:['maj7','dom7','maj7','dom7'], cat:'turnaround' },
-  { id:'j-tritone-loop',  name:'Imaj7–♭II7–Imaj7–V7',   desc:'Tritone substitution loop — chromatic bass motion into resolution', genre:'Jazz / Post-Bop', feel:'Chromatic, sophisticated', example:'Joy Spring — Clifford Brown / Confirmation — Charlie Parker', degrees:['Imaj7','♭II7 (tritone)','Imaj7','V7'], steps:[0,1,0,7], mixedQ:['maj7','dom7','maj7','dom7'], cat:'turnaround' },
-  { id:'j-contrafact',    name:'I7–IV7–♭VII7–♭III7',    desc:'Contrafact turnaround — descending dominant 7ths a 4th apart', genre:'Bebop', feel:'Bebop, fast, angular', example:'Half Nelson — Miles Davis / Donna Lee — Charlie Parker', degrees:['I7','IV7','♭VII7','♭III7'], steps:[0,5,10,3], mixedQ:['dom7','dom7','dom7','dom7'], cat:'turnaround' },
+  { id:'j-I-VI-IV-II',    name:'Imaj7–VI7–IVmaj7–II7',  desc:'Extended turnaround — circle of fifths through four chords', genre:'Swing / Bop', feel:'Circular, swinging, propulsive', example:'All the Things You Are — Jerome Kern / Cherokee — Ray Noble', degrees:['Imaj7','VI7','IVmaj7','II7'], steps:[0,9,5,2], mixedQ:['maj7','dom7','maj7','dom7'], cat:'turnaround',
+    bSection:{ name:'iii7–VI7–ii7–V7', desc:'The inner-voice turnaround — iii to vi to ii to V, classic "rhythm changes" inner motion, tighter and more inside', degrees:['iii7','VI7','ii7','V7'], steps:[4,9,2,7], mixedQ:['min7','dom7','min7','dom7'] } },
+  { id:'j-tritone-loop',  name:'Imaj7–♭II7–Imaj7–V7',   desc:'Tritone substitution loop — chromatic bass motion into resolution', genre:'Jazz / Post-Bop', feel:'Chromatic, sophisticated', example:'Joy Spring — Clifford Brown / Confirmation — Charlie Parker', degrees:['Imaj7','♭II7 (tritone)','Imaj7','V7'], steps:[0,1,0,7], mixedQ:['maj7','dom7','maj7','dom7'], cat:'turnaround',
+    bSection:{ name:'IV7–♭VII7–iii7–♭II7', desc:'Full tritone chain — each dominant is substituted, bass descends chromatically through four steps, pure bebop sophistication', degrees:['IV7','♭VII7','iii7','♭II7'], steps:[5,10,4,1], mixedQ:['dom7','dom7','min7','dom7'] } },
+  { id:'j-contrafact',    name:'I7–IV7–♭VII7–♭III7',    desc:'Contrafact turnaround — descending dominant 7ths a 4th apart', genre:'Bebop', feel:'Bebop, fast, angular', example:'Half Nelson — Miles Davis / Donna Lee — Charlie Parker', degrees:['I7','IV7','♭VII7','♭III7'], steps:[0,5,10,3], mixedQ:['dom7','dom7','dom7','dom7'], cat:'turnaround',
+    bSection:{ name:'ii7–V7–♭ii7–♭V7', desc:'Pair each dominant with its ii — creates parallel ii–V cells descending, double the sophistication', degrees:['ii7','V7','♭ii7','♭V7'], steps:[2,7,1,6], mixedQ:['min7','dom7','min7','dom7'] } },
   // BLUES
-  { id:'j-quick-change',  name:'I7–IV7–I7–V7–IV7–I7',   desc:'Quick-change blues — IV chord appears in bar 2 for extra motion', genre:'Blues / Jump Jazz', feel:'Bouncy, driving, classic', example:'Everyday I Have the Blues — B.B. King / Mannish Boy — Muddy Waters', degrees:['I7','IV7','I7','V7','IV7','I7'], steps:[0,5,0,7,5,0], mixedQ:['dom7','dom7','dom7','dom7','dom7','dom7'], cat:'blues' },
-  { id:'j-bebop-blues',   name:'I7–IV7–ii7–V7 (Bop Blues)', desc:'Bebop blues with ii–V in bars 9–10 — Parker/Dizzy vocabulary', genre:'Bebop', feel:'Sophisticated, swinging', example:'Billie\'s Bounce — Charlie Parker / Tenor Madness — Sonny Rollins', degrees:['I7','IV7','ii7','V7'], steps:[0,5,2,7], mixedQ:['dom7','dom7','min7','dom7'], cat:'blues' },
+  { id:'j-quick-change',  name:'I7–IV7–I7–V7–IV7–I7',   desc:'Quick-change blues — IV chord appears in bar 2 for extra motion', genre:'Blues / Jump Jazz', feel:'Bouncy, driving, classic', example:'Everyday I Have the Blues — B.B. King / Mannish Boy — Muddy Waters', degrees:['I7','IV7','I7','V7','IV7','I7'], steps:[0,5,0,7,5,0], mixedQ:['dom7','dom7','dom7','dom7','dom7','dom7'], cat:'blues',
+    bSection:{ name:'I7–♭III7–♭VI7–♭II7 (Sub Chain)', desc:'Each bar substituted with a tritone dominant — the bebop player\'s way of making the blues sound like outer space', degrees:['I7','♭III7','♭VI7','♭II7'], steps:[0,3,8,1], mixedQ:['dom7','dom7','dom7','dom7'] } },
+  { id:'j-bebop-blues',   name:'I7–IV7–ii7–V7 (Bop Blues)', desc:'Bebop blues with ii–V in bars 9–10 — Parker/Dizzy vocabulary', genre:'Bebop', feel:'Sophisticated, swinging', example:'Billie\'s Bounce — Charlie Parker / Tenor Madness — Sonny Rollins', degrees:['I7','IV7','ii7','V7'], steps:[0,5,2,7], mixedQ:['dom7','dom7','min7','dom7'], cat:'blues',
+    bSection:{ name:'vi7–II7–ii7–V7 (Bird Turnaround)', desc:'Bird\'s preferred turnaround — vi minor to the secondary dominant II7, then a clean ii–V landing', degrees:['vi7','II7','ii7','V7'], steps:[9,2,2,7], mixedQ:['min7','dom7','min7','dom7'] } },
   // LATIN JAZZ
-  { id:'j-bossa-nova',    name:'Bossa Nova (Imaj7–♭IImaj7)', desc:'The Jobim chromatic slide — Brazil\'s greatest harmonic gift to the world', genre:'Bossa Nova / Latin Jazz', feel:'Languid, sophisticated, tropical', example:'Girl from Ipanema — Jobim / Corcovado — Jobim / Wave — Jobim', degrees:['Imaj7','♭IImaj7','Imaj7'], steps:[0,1,0], mixedQ:['maj7','maj7','maj7'], cat:'latin' },
-  { id:'j-besame',        name:'i–♭VI–♭III–V (Bolero)',  desc:'Bésame Mucho changes — rich Spanish-influenced minor harmony', genre:'Bolero / Latin Jazz', feel:'Romantic, lush, Spanish', example:'Bésame Mucho (trad.) / My Romance — Rodgers & Hart', degrees:['im7','♭VImaj7','♭IIImaj7','V7'], steps:[0,8,3,7], mixedQ:['min7','maj7','maj7','dom7'], cat:'latin' },
-  { id:'j-samba',         name:'I9–IV9–V9 (Samba)',      desc:'Samba harmonic foundation — dominant 9th chords with rhythmic drive', genre:'Samba / Latin Jazz', feel:'Bright, rhythmic, Brazilian', example:'Mas Que Nada — Jorge Ben / Aquarela do Brasil — Ary Barroso', degrees:['I9','IV9','V9'], steps:[0,5,7], mixedQ:['dom7','dom7','dom7'], cat:'latin' },
+  { id:'j-bossa-nova',    name:'Bossa Nova (Imaj7–♭IImaj7)', desc:'The Jobim chromatic slide — Brazil\'s greatest harmonic gift to the world', genre:'Bossa Nova / Latin Jazz', feel:'Languid, sophisticated, tropical', example:'Girl from Ipanema — Jobim / Corcovado — Jobim / Wave — Jobim', degrees:['Imaj7','♭IImaj7','Imaj7'], steps:[0,1,0], mixedQ:['maj7','maj7','maj7'], cat:'latin',
+    bSection:{ name:'ii7–V7–Imaj7–♭IImaj7', desc:'Add the ii–V approach before the chromatic slide — more harmonic motion, the "Wave" bridge feel', degrees:['ii7','V7','Imaj7','♭IImaj7'], steps:[2,7,0,1], mixedQ:['min7','dom7','maj7','maj7'] } },
+  { id:'j-besame',        name:'i–♭VI–♭III–V (Bolero)',  desc:'Bésame Mucho changes — rich Spanish-influenced minor harmony', genre:'Bolero / Latin Jazz', feel:'Romantic, lush, Spanish', example:'Bésame Mucho (trad.) / My Romance — Rodgers & Hart', degrees:['im7','♭VImaj7','♭IIImaj7','V7'], steps:[0,8,3,7], mixedQ:['min7','maj7','maj7','dom7'], cat:'latin',
+    bSection:{ name:'im7–iv7–V7–im7', desc:'Return to the pure minor cadence — stripped back after the lush chromatic verse, more intimate and direct', degrees:['im7','iv7','V7','im7'], steps:[0,5,7,0], mixedQ:['min7','min7','dom7','min7'] } },
+  { id:'j-samba',         name:'I9–IV9–V9 (Samba)',      desc:'Samba harmonic foundation — dominant 9th chords with rhythmic drive', genre:'Samba / Latin Jazz', feel:'Bright, rhythmic, Brazilian', example:'Mas Que Nada — Jorge Ben / Aquarela do Brasil — Ary Barroso', degrees:['I9','IV9','V9'], steps:[0,5,7], mixedQ:['dom7','dom7','dom7'], cat:'latin',
+    bSection:{ name:'vi9–ii9–V9–I9', desc:'The samba circle of fifths turnaround — vi to ii to V to I, keeps the rhythmic energy but adds harmonic direction', degrees:['vi9','ii9','V9','I9'], steps:[9,2,7,0], mixedQ:['min7','min7','dom7','dom7'] } },
   // BALLAD
-  { id:'j-ballad-body',   name:'I–vi–ii–V (Ballad)',     desc:'Body and Soul style — the foundational slow ballad movement in jazz', genre:'Jazz Ballad', feel:'Tender, searching, intimate', example:'Body and Soul — Coleman Hawkins / The Very Thought of You — Ray Noble', degrees:['Imaj7','vi7','ii7','V7'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'ballad' },
-  { id:'j-ballad-misty',  name:'Imaj7–V7–iii7–VI7 (Misty)', desc:'"Misty" style — the slow walk through secondary dominants, each chord a surprise', genre:'Jazz Ballad', feel:'Romantic, yearning, lush', example:'Misty — Erroll Garner / My Way — Frank Sinatra', degrees:['Imaj7','V7','iii7','VI7'], steps:[0,7,4,9], mixedQ:['maj7','dom7','min7','dom7'], cat:'ballad' },
+  { id:'j-ballad-body',   name:'I–vi–ii–V (Ballad)',     desc:'Body and Soul style — the foundational slow ballad movement in jazz', genre:'Jazz Ballad', feel:'Tender, searching, intimate', example:'Body and Soul — Coleman Hawkins / The Very Thought of You — Ray Noble', degrees:['Imaj7','vi7','ii7','V7'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'ballad',
+    bSection:{ name:'♭IIImaj7–♭VI7–♭IImaj7–V7♭9', desc:'"Body and Soul" key change — the classic modulation up a half step into ♭III, the most famous bridge in jazz', degrees:['♭IIImaj7','♭VI7','♭IImaj7','V7♭9'], steps:[3,8,1,7], mixedQ:['maj7','dom7','maj7','dom7'] } },
+  { id:'j-ballad-misty',  name:'Imaj7–V7–iii7–VI7 (Misty)', desc:'"Misty" style — the slow walk through secondary dominants, each chord a surprise', genre:'Jazz Ballad', feel:'Romantic, yearning, lush', example:'Misty — Erroll Garner / My Way — Frank Sinatra', degrees:['Imaj7','V7','iii7','VI7'], steps:[0,7,4,9], mixedQ:['maj7','dom7','min7','dom7'], cat:'ballad',
+    bSection:{ name:'IVmaj7–iv7–iii7–♭III7', desc:'The Misty bridge — IV to minor iv chromatic walk, the harmonic peak of the song before the final resolution', degrees:['IVmaj7','iv7','iii7','♭III7'], steps:[5,5,4,3], mixedQ:['maj7','min7','min7','dom7'] } },
 ];
 
 // ════════════════════════════════════════════════════════════════
@@ -2155,36 +2262,61 @@ const JAZZ_PROGRESSIONS = [
 // ════════════════════════════════════════════════════════════════
 const NEO_PROGRESSIONS = [
   // LUSH
-  { id:'ns-lush-1', name:'Imaj9–vi9–ii9–V9',          desc:'The quintessential neo-soul loop — all chords extended to the 9th. D\'Angelo, Erykah Badu', genre:'Neo-Soul', feel:'Lush, warm, circular', example:'Isn\'t She Lovely — Stevie Wonder / Untitled (How Does It Feel) — D\'Angelo', degrees:['Imaj9','vi9','ii9','V9'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'lush' },
-  { id:'ns-lush-2', name:'Imaj9–♭VIImaj9–IV9–V9',    desc:'Major 7ths with the borrowed ♭VII — Frank Ocean, Solange sonic palette', genre:'Neo-Soul / Alternative R&B', feel:'Dreamy, rich, cinematic', example:'Solo — Frank Ocean / Cranes in the Sky — Solange', degrees:['Imaj9','♭VIImaj9','IV9','V9'], steps:[0,10,5,7], mixedQ:['maj7','maj7','dom7','dom7'], cat:'lush' },
-  { id:'ns-lush-3', name:'Imaj7–iii7–vi9–ii9',        desc:'All-diatonic lush loop — stays in key but luxuriates in extensions', genre:'Neo-Soul / Soul-Jazz', feel:'Warm, smooth, timeless', example:'If You Really Love Me — Stevie Wonder / Features — Erykah Badu', degrees:['Imaj7','iii7','vi9','ii9'], steps:[0,4,9,2], mixedQ:['maj7','min7','min7','min7'], cat:'lush' },
-  { id:'ns-lush-4', name:'♭VImaj7–♭VIImaj7–Imaj9',   desc:'Two-chord slide into the I — floating, hymnal resolution. Lauryn Hill style', genre:'Neo-Soul / Gospel Soul', feel:'Uplifting, sacred, lush', example:'Ex-Factor — Lauryn Hill / Killing Me Softly — Roberta Flack', degrees:['♭VImaj7','♭VIImaj7','Imaj9'], steps:[8,10,0], mixedQ:['maj7','maj7','maj7'], cat:'lush' },
-  { id:'ns-lush-5', name:'IVmaj9–iii7–ii9–Imaj7',    desc:'Descending diatonic lush — each chord steps down, classic Stevie Wonder movement', genre:'Soul / Neo-Soul', feel:'Descending, warm, nostalgic', example:'All I Do — Stevie Wonder / The Warmth — Incognito', degrees:['IVmaj9','iii7','ii9','Imaj7'], steps:[5,4,2,0], mixedQ:['maj7','min7','min7','maj7'], cat:'lush' },
+  { id:'ns-lush-1', name:'Imaj9–vi9–ii9–V9',          desc:'The quintessential neo-soul loop — all chords extended to the 9th. D\'Angelo, Erykah Badu', genre:'Neo-Soul', feel:'Lush, warm, circular', example:'Isn\'t She Lovely — Stevie Wonder / Untitled (How Does It Feel) — D\'Angelo', degrees:['Imaj9','vi9','ii9','V9'], steps:[0,9,2,7], mixedQ:['maj7','min7','min7','dom7'], cat:'lush',
+    bSection:{ name:'IVmaj9–V9–iii7–vi9', desc:'Diatonic descent from IV — the classic neo-soul bridge that delays the tonic, stretching the lush harmonic space', degrees:['IVmaj9','V9','iii7','vi9'], steps:[5,7,4,9], mixedQ:['maj7','dom7','min7','min7'] } },
+  { id:'ns-lush-2', name:'Imaj9–♭VIImaj9–IV9–V9',    desc:'Major 7ths with the borrowed ♭VII — Frank Ocean, Solange sonic palette', genre:'Neo-Soul / Alternative R&B', feel:'Dreamy, rich, cinematic', example:'Solo — Frank Ocean / Cranes in the Sky — Solange', degrees:['Imaj9','♭VIImaj9','IV9','V9'], steps:[0,10,5,7], mixedQ:['maj7','maj7','dom7','dom7'], cat:'lush',
+    bSection:{ name:'vi9–♭VIImaj9–Imaj9–IV9', desc:'Lead from the vi before the borrowed ♭VII — the Frank Ocean bridge that adds melancholy before the return', degrees:['vi9','♭VIImaj9','Imaj9','IV9'], steps:[9,10,0,5], mixedQ:['min7','maj7','maj7','dom7'] } },
+  { id:'ns-lush-3', name:'Imaj7–iii7–vi9–ii9',        desc:'All-diatonic lush loop — stays in key but luxuriates in extensions', genre:'Neo-Soul / Soul-Jazz', feel:'Warm, smooth, timeless', example:'If You Really Love Me — Stevie Wonder / Features — Erykah Badu', degrees:['Imaj7','iii7','vi9','ii9'], steps:[0,4,9,2], mixedQ:['maj7','min7','min7','min7'], cat:'lush',
+    bSection:{ name:'IVmaj9–iii7–ii9–V9', desc:'Pivot to the IV for a classic bridge lift — maintains warmth while giving the phrase new direction before resolving', degrees:['IVmaj9','iii7','ii9','V9'], steps:[5,4,2,7], mixedQ:['maj7','min7','min7','dom7'] } },
+  { id:'ns-lush-4', name:'♭VImaj7–♭VIImaj7–Imaj9',   desc:'Two-chord slide into the I — floating, hymnal resolution. Lauryn Hill style', genre:'Neo-Soul / Gospel Soul', feel:'Uplifting, sacred, lush', example:'Ex-Factor — Lauryn Hill / Killing Me Softly — Roberta Flack', degrees:['♭VImaj7','♭VIImaj7','Imaj9'], steps:[8,10,0], mixedQ:['maj7','maj7','maj7'], cat:'lush',
+    bSection:{ name:'Imaj9–vi9–♭VImaj7–♭VIImaj7', desc:'Extend from the tonic before the borrowed chord slide — gives the phrase a fuller arc, more like an actual verse structure', degrees:['Imaj9','vi9','♭VImaj7','♭VIImaj7'], steps:[0,9,8,10], mixedQ:['maj7','min7','maj7','maj7'] } },
+  { id:'ns-lush-5', name:'IVmaj9–iii7–ii9–Imaj7',    desc:'Descending diatonic lush — each chord steps down, classic Stevie Wonder movement', genre:'Soul / Neo-Soul', feel:'Descending, warm, nostalgic', example:'All I Do — Stevie Wonder / The Warmth — Incognito', degrees:['IVmaj9','iii7','ii9','Imaj7'], steps:[5,4,2,0], mixedQ:['maj7','min7','min7','maj7'], cat:'lush',
+    bSection:{ name:'Imaj7–vi9–IVmaj9–V9', desc:'Ascend before the descent — the I–vi–IV–V lush variant gives contrast before returning to the downward sweep', degrees:['Imaj7','vi9','IVmaj9','V9'], steps:[0,9,5,7], mixedQ:['maj7','min7','maj7','dom7'] } },
   // GROOVE
-  { id:'ns-groove-1', name:'i9–♭VII9–♭VI9–V9',       desc:'Minor descending groove — The Roots, Common. Relentless downward motion', genre:'Hip-Hop Soul / Neo-Soul', feel:'Descending, hypnotic, deep', example:'The Light — Common / Seed 2.0 — The Roots', degrees:['i9','♭VII9','♭VI9','V9'], steps:[0,10,8,7], mixedQ:['min7','dom7','dom7','dom7'], cat:'groove' },
-  { id:'ns-groove-2', name:'i9–iv9–♭VII9–♭III',      desc:'Minor modal groove loop — J Dilla, Questlove. Dark with rhythmic momentum', genre:'Neo-Soul / Hip-Hop Soul', feel:'Deep, rolling, hypnotic', example:'You Got Me — The Roots / The Seed — The Roots', degrees:['i9','iv9','♭VII9','♭III'], steps:[0,5,10,3], mixedQ:['min7','min7','dom7','major'], cat:'groove' },
-  { id:'ns-groove-3', name:'i9–♭III–♭VII9–IV9',      desc:'The Lauryn Hill / Maxwell groove — minor tonic with major borrowed chords', genre:'Neo-Soul', feel:'Powerful, grooving, soulful', example:'Ready or Not — Fugees / Lost Ones — Lauryn Hill', degrees:['i9','♭III','♭VII9','IV9'], steps:[0,3,10,5], mixedQ:['min7','major','dom7','dom7'], cat:'groove' },
-  { id:'ns-groove-4', name:'I9–IV9–I9–V9',            desc:'Major groove — Prince/Stevie funk feel, 9th chords throughout', genre:'Soul-Funk / Neo-Soul', feel:'Bright, funky, driving', example:'Superstition — Stevie Wonder / Higher Ground — Stevie Wonder', degrees:['I9','IV9','I9','V9'], steps:[0,5,0,7], mixedQ:['dom7','dom7','dom7','dom7'], cat:'groove' },
-  { id:'ns-groove-5', name:'ii9–V9–I6/9–VI9',         desc:'Jazz-soul ii–V turnaround with added colour — sophisticated groove', genre:'Neo-Soul / Jazz', feel:'Sophisticated, groove-forward', example:'Just the Two of Us — Grover Washington Jr. / Compared to What — Les McCann', degrees:['ii9','V9','I6/9','VI9'], steps:[2,7,0,9], mixedQ:['min7','dom7','maj7','dom7'], cat:'groove' },
+  { id:'ns-groove-1', name:'i9–♭VII9–♭VI9–V9',       desc:'Minor descending groove — The Roots, Common. Relentless downward motion', genre:'Hip-Hop Soul / Neo-Soul', feel:'Descending, hypnotic, deep', example:'The Light — Common / Seed 2.0 — The Roots', degrees:['i9','♭VII9','♭VI9','V9'], steps:[0,10,8,7], mixedQ:['min7','dom7','dom7','dom7'], cat:'groove',
+    bSection:{ name:'♭VI9–♭VII9–i9–iv9', desc:'Reverse the descent — sweep up from ♭VI before landing on the tonic and dropping to iv. Creates an arc of upward and downward motion', degrees:['♭VI9','♭VII9','i9','iv9'], steps:[8,10,0,5], mixedQ:['dom7','dom7','min7','min7'] } },
+  { id:'ns-groove-2', name:'i9–iv9–♭VII9–♭III',      desc:'Minor modal groove loop — J Dilla, Questlove. Dark with rhythmic momentum', genre:'Neo-Soul / Hip-Hop Soul', feel:'Deep, rolling, hypnotic', example:'You Got Me — The Roots / The Seed — The Roots', degrees:['i9','iv9','♭VII9','♭III'], steps:[0,5,10,3], mixedQ:['min7','min7','dom7','major'], cat:'groove',
+    bSection:{ name:'♭VI9–♭VII9–i9–♭VII9', desc:'The Dilla-style ♭VI approach — floats above the tonic before the ♭VII groove landing. Ethereal contrast to the dark A section', degrees:['♭VI9','♭VII9','i9','♭VII9'], steps:[8,10,0,10], mixedQ:['dom7','dom7','min7','dom7'] } },
+  { id:'ns-groove-3', name:'i9–♭III–♭VII9–IV9',      desc:'The Lauryn Hill / Maxwell groove — minor tonic with major borrowed chords', genre:'Neo-Soul', feel:'Powerful, grooving, soulful', example:'Ready or Not — Fugees / Lost Ones — Lauryn Hill', degrees:['i9','♭III','♭VII9','IV9'], steps:[0,3,10,5], mixedQ:['min7','major','dom7','dom7'], cat:'groove',
+    bSection:{ name:'♭VI9–♭III–i9–V9', desc:'Approach from the ♭VI before the ♭III — the gospel-soul lift that makes the groove feel transcendent', degrees:['♭VI9','♭III','i9','V9'], steps:[8,3,0,7], mixedQ:['dom7','major','min7','dom7'] } },
+  { id:'ns-groove-4', name:'I9–IV9–I9–V9',            desc:'Major groove — Prince/Stevie funk feel, 9th chords throughout', genre:'Soul-Funk / Neo-Soul', feel:'Bright, funky, driving', example:'Superstition — Stevie Wonder / Higher Ground — Stevie Wonder', degrees:['I9','IV9','I9','V9'], steps:[0,5,0,7], mixedQ:['dom7','dom7','dom7','dom7'], cat:'groove',
+    bSection:{ name:'ii9–V9–I9–♭VII9', desc:'Jazz up the groove with a ii–V approach — the soul-jazz bridge that keeps the harmony moving forward', degrees:['ii9','V9','I9','♭VII9'], steps:[2,7,0,10], mixedQ:['min7','dom7','dom7','dom7'] } },
+  { id:'ns-groove-5', name:'ii9–V9–I6/9–VI9',         desc:'Jazz-soul ii–V turnaround with added colour — sophisticated groove', genre:'Neo-Soul / Jazz', feel:'Sophisticated, groove-forward', example:'Just the Two of Us — Grover Washington Jr. / Compared to What — Les McCann', degrees:['ii9','V9','I6/9','VI9'], steps:[2,7,0,9], mixedQ:['min7','dom7','maj7','dom7'], cat:'groove',
+    bSection:{ name:'IVmaj9–♭VII9–ii9–V9', desc:'Start the turnaround from the IV with a borrowed ♭VII detour — the smooth-jazz bridge move that adds modal warmth', degrees:['IVmaj9','♭VII9','ii9','V9'], steps:[5,10,2,7], mixedQ:['maj7','dom7','min7','dom7'] } },
   // MINOR
-  { id:'ns-minor-1', name:'im9–♭VImaj9–♭III–♭VII9',  desc:'Epic minor neo-soul arc — massive orchestral feel', genre:'R&B / Neo-Soul', feel:'Epic, sweeping, cinematic', example:'No Ordinary Love — Sade / Cherish the Day — Sade', degrees:['im9','♭VImaj9','♭III','♭VII9'], steps:[0,8,3,10], mixedQ:['min7','maj7','major','dom7'], cat:'minor' },
-  { id:'ns-minor-2', name:'im9–iv9–♭VII9–♭VImaj7',   desc:'Aeolian soul loop — descends through the natural minor scale with lush extensions', genre:'Neo-Soul / Dark Soul', feel:'Melancholic, soulful, deep', example:'Bag Lady — Erykah Badu / On & On — Erykah Badu', degrees:['im9','iv9','♭VII9','♭VImaj7'], steps:[0,5,10,8], mixedQ:['min7','min7','dom7','maj7'], cat:'minor' },
-  { id:'ns-minor-3', name:'im9–ii∅–V7♭9–im9',        desc:'Minor ii–V–i with extensions — jazz harmony in a soul context. Intimate and elegant', genre:'Soul-Jazz / Neo-Soul', feel:'Intimate, elegant, resolving', example:'Afro Blue — Erykah Badu / A Love Affair — The Internet', degrees:['im9','ii∅','V7♭9','im9'], steps:[0,2,7,0], mixedQ:['min7','min7','dom7','min7'], cat:'minor' },
-  { id:'ns-minor-4', name:'im9–♭IImaj7–im9–♭VImaj7', desc:'Phrygian neo-soul — the half-step ♭II gives a Sade-like mysterious quality', genre:'Neo-Soul / Quiet Storm', feel:'Mysterious, intimate, sophisticated', example:'By Your Side — Sade / Smooth Operator — Sade', degrees:['im9','♭IImaj7','im9','♭VImaj7'], steps:[0,1,0,8], mixedQ:['min7','maj7','min7','maj7'], cat:'minor' },
+  { id:'ns-minor-1', name:'im9–♭VImaj9–♭III–♭VII9',  desc:'Epic minor neo-soul arc — massive orchestral feel', genre:'R&B / Neo-Soul', feel:'Epic, sweeping, cinematic', example:'No Ordinary Love — Sade / Cherish the Day — Sade', degrees:['im9','♭VImaj9','♭III','♭VII9'], steps:[0,8,3,10], mixedQ:['min7','maj7','major','dom7'], cat:'minor',
+    bSection:{ name:'im9–iv9–♭VI9–V9', desc:'Drop from the ♭VI sweep into the iv — the intimate bridge that pulls back the orchestral scale before the V resolution', degrees:['im9','iv9','♭VI9','V9'], steps:[0,5,8,7], mixedQ:['min7','min7','dom7','dom7'] } },
+  { id:'ns-minor-2', name:'im9–iv9–♭VII9–♭VImaj7',   desc:'Aeolian soul loop — descends through the natural minor scale with lush extensions', genre:'Neo-Soul / Dark Soul', feel:'Melancholic, soulful, deep', example:'Bag Lady — Erykah Badu / On & On — Erykah Badu', degrees:['im9','iv9','♭VII9','♭VImaj7'], steps:[0,5,10,8], mixedQ:['min7','min7','dom7','maj7'], cat:'minor',
+    bSection:{ name:'♭VImaj7–♭VIImaj7–im9–V9', desc:'Reverse the descent — rise from ♭VI through ♭VII before the tonic return and V pull. Creates verse-chorus contrast', degrees:['♭VImaj7','♭VIImaj7','im9','V9'], steps:[8,10,0,7], mixedQ:['maj7','maj7','min7','dom7'] } },
+  { id:'ns-minor-3', name:'im9–ii∅–V7♭9–im9',        desc:'Minor ii–V–i with extensions — jazz harmony in a soul context. Intimate and elegant', genre:'Soul-Jazz / Neo-Soul', feel:'Intimate, elegant, resolving', example:'Afro Blue — Erykah Badu / A Love Affair — The Internet', degrees:['im9','ii∅','V7♭9','im9'], steps:[0,2,7,0], mixedQ:['min7','min7','dom7','min7'], cat:'minor',
+    bSection:{ name:'im9–♭VImaj9–ii∅–V7♭9', desc:'Add the ♭VI before the half-dim — gives the jazz-soul cadence more breadth and a warmer colour before the V tension', degrees:['im9','♭VImaj9','ii∅','V7♭9'], steps:[0,8,2,7], mixedQ:['min7','maj7','min7','dom7'] } },
+  { id:'ns-minor-4', name:'im9–♭IImaj7–im9–♭VImaj7', desc:'Phrygian neo-soul — the half-step ♭II gives a Sade-like mysterious quality', genre:'Neo-Soul / Quiet Storm', feel:'Mysterious, intimate, sophisticated', example:'By Your Side — Sade / Smooth Operator — Sade', degrees:['im9','♭IImaj7','im9','♭VImaj7'], steps:[0,1,0,8], mixedQ:['min7','maj7','min7','maj7'], cat:'minor',
+    bSection:{ name:'♭VImaj7–V9–im9–♭IImaj7', desc:'Start from the ♭VI for a warmer entry before the Phrygian ♭II tension — the contrast section that makes the mystery feel earned', degrees:['♭VImaj7','V9','im9','♭IImaj7'], steps:[8,7,0,1], mixedQ:['maj7','dom7','min7','maj7'] } },
   // MODAL
-  { id:'ns-modal-1', name:'im9–IV9 (Dorian vamp)',    desc:'Dorian mode groove — one of the most-used sounds in neo-soul. Raised 6th gives light', genre:'Neo-Soul / Modal Soul', feel:'Soulful, open, modal', example:'Oye Como Va — Santana / Love\'s in Need of Love Today — Stevie Wonder', degrees:['im9','IV9'], steps:[0,5], mixedQ:['min7','dom7'], cat:'modal' },
-  { id:'ns-modal-2', name:'Imaj9–II9 (Lydian)',       desc:'Lydian major vamp — the raised ♯4 creates an ethereal, weightless feeling', genre:'Neo-Soul / Ambient Soul', feel:'Ethereal, floating, luminous', example:'What a Wonderful World — IZ / Wildflower — Hues Corporation', degrees:['Imaj9','II9'], steps:[0,2], mixedQ:['maj7','dom7'], cat:'modal' },
-  { id:'ns-modal-3', name:'I9–♭VII9–IV9 (Mixolydian)', desc:'Mixolydian soul — the flat 7 gives a bluesy, grounded, earthy quality', genre:'Soul / R&B', feel:'Earthy, warm, grounded', example:'Question of U — Prince / Sign \'O\' the Times — Prince', degrees:['I9','♭VII9','IV9'], steps:[0,10,5], mixedQ:['dom7','dom7','dom7'], cat:'modal' },
-  { id:'ns-modal-4', name:'im9–♭VIImaj9–♭VImaj7–♭VIImaj9', desc:'Aeolian modal loop — dreamy, meditative. Massive in slow neo-soul ballads', genre:'Neo-Soul Ballad', feel:'Meditative, dreamy, enveloping', example:'Brown Sugar — D\'Angelo / Voodoo (album) — D\'Angelo', degrees:['im9','♭VIImaj9','♭VImaj7','♭VIImaj9'], steps:[0,10,8,10], mixedQ:['min7','maj7','maj7','maj7'], cat:'modal' },
-  { id:'ns-modal-5', name:'Imaj9–♭VImaj9–♭IVmaj7–V9', desc:'Modal interchange loop — borrowing ♭VI and ♭IV from parallel minor for maximum lushness', genre:'Neo-Soul / Progressive R&B', feel:'Lush, harmonically adventurous', example:'Beautiful — India.Arie / Little Wing — Jimi Hendrix', degrees:['Imaj9','♭VImaj9','♭IVmaj7','V9'], steps:[0,8,5,7], mixedQ:['maj7','maj7','maj7','dom7'], cat:'modal' },
+  { id:'ns-modal-1', name:'im9–IV9 (Dorian vamp)',    desc:'Dorian mode groove — one of the most-used sounds in neo-soul. Raised 6th gives light', genre:'Neo-Soul / Modal Soul', feel:'Soulful, open, modal', example:'Oye Como Va — Santana / Love\'s in Need of Love Today — Stevie Wonder', degrees:['im9','IV9'], steps:[0,5], mixedQ:['min7','dom7'], cat:'modal',
+    bSection:{ name:'im9–♭VII9–IV9–im9', desc:'Add the ♭VII for a three-chord Dorian phrase — the extension that gives the vamp movement without leaving the mode', degrees:['im9','♭VII9','IV9','im9'], steps:[0,10,5,0], mixedQ:['min7','dom7','dom7','min7'] } },
+  { id:'ns-modal-2', name:'Imaj9–II9 (Lydian)',       desc:'Lydian major vamp — the raised ♯4 creates an ethereal, weightless feeling', genre:'Neo-Soul / Ambient Soul', feel:'Ethereal, floating, luminous', example:'What a Wonderful World — IZ / Wildflower — Hues Corporation', degrees:['Imaj9','II9'], steps:[0,2], mixedQ:['maj7','dom7'], cat:'modal',
+    bSection:{ name:'IVmaj9–II9–Imaj9–V9', desc:'Bring in the IV before the Lydian II — anchors the ethereal float in something grounded before returning to weightlessness', degrees:['IVmaj9','II9','Imaj9','V9'], steps:[5,2,0,7], mixedQ:['maj7','dom7','maj7','dom7'] } },
+  { id:'ns-modal-3', name:'I9–♭VII9–IV9 (Mixolydian)', desc:'Mixolydian soul — the flat 7 gives a bluesy, grounded, earthy quality', genre:'Soul / R&B', feel:'Earthy, warm, grounded', example:'Question of U — Prince / Sign \'O\' the Times — Prince', degrees:['I9','♭VII9','IV9'], steps:[0,10,5], mixedQ:['dom7','dom7','dom7'], cat:'modal',
+    bSection:{ name:'IV9–I9–♭VII9–IV9', desc:'Start the Mixolydian phrase on the IV — delays the tonic arrival and creates a more circular, hypnotic feel', degrees:['IV9','I9','♭VII9','IV9'], steps:[5,0,10,5], mixedQ:['dom7','dom7','dom7','dom7'] } },
+  { id:'ns-modal-4', name:'im9–♭VIImaj9–♭VImaj7–♭VIImaj9', desc:'Aeolian modal loop — dreamy, meditative. Massive in slow neo-soul ballads', genre:'Neo-Soul Ballad', feel:'Meditative, dreamy, enveloping', example:'Brown Sugar — D\'Angelo / Voodoo (album) — D\'Angelo', degrees:['im9','♭VIImaj9','♭VImaj7','♭VIImaj9'], steps:[0,10,8,10], mixedQ:['min7','maj7','maj7','maj7'], cat:'modal',
+    bSection:{ name:'♭VImaj7–♭VIImaj9–im9–IV9', desc:'Add a IV9 Dorian lift at the end — transforms the pure Aeolian dream into something more open and modal', degrees:['♭VImaj7','♭VIImaj9','im9','IV9'], steps:[8,10,0,5], mixedQ:['maj7','maj7','min7','dom7'] } },
+  { id:'ns-modal-5', name:'Imaj9–♭VImaj9–♭IVmaj7–V9', desc:'Modal interchange loop — borrowing ♭VI and ♭IV from parallel minor for maximum lushness', genre:'Neo-Soul / Progressive R&B', feel:'Lush, harmonically adventurous', example:'Beautiful — India.Arie / Little Wing — Jimi Hendrix', degrees:['Imaj9','♭VImaj9','♭IVmaj7','V9'], steps:[0,8,5,7], mixedQ:['maj7','maj7','maj7','dom7'], cat:'modal',
+    bSection:{ name:'vi9–♭VImaj9–ii9–V9', desc:'Parallel descent from vi to ♭VI — the borrowed chord works as a chromatic approach to the ii–V, creating a richer modal journey', degrees:['vi9','♭VImaj9','ii9','V9'], steps:[9,8,2,7], mixedQ:['min7','maj7','min7','dom7'] } },
   // GOSPEL SOUL
-  { id:'ns-gospel-1', name:'I–IV–♭VII–IV (Gospel Soul)', desc:'The jubilant soul-gospel lift — Aretha Franklin\'s foundational sound', genre:'Gospel Soul / R&B', feel:'Jubilant, uplifting, powerful', example:'Respect — Aretha Franklin / Think — Aretha Franklin', degrees:['I','IV','♭VII','IV'], steps:[0,5,10,5], cat:'gospel' },
-  { id:'ns-gospel-2', name:'im–♭VImaj7–♭IIImaj7–♭VII', desc:'Cinematic gospel minor arc — devotional and sweeping', genre:'Gospel Soul / Neo-Soul', feel:'Devotional, cinematic, soulful', example:'A Change Is Gonna Come — Sam Cooke / If You Don\'t Know Me By Now — Harold Melvin', degrees:['im','♭VImaj7','♭IIImaj7','♭VII'], steps:[0,8,3,10], mixedQ:['minor','maj7','maj7','major'], cat:'gospel' },
-  { id:'ns-gospel-3', name:'I–♭VII–IV–I (Gospel Lift)', desc:'The church lift — borrowed ♭VII before the IV gives an ecstatic, transcendent feeling', genre:'Gospel / Soul', feel:'Transcendent, ecstatic, warm', example:'I\'ll Take You There — Staple Singers / Higher Ground — Stevie Wonder', degrees:['I','♭VII','IV','I'], steps:[0,10,5,0], cat:'gospel' },
+  { id:'ns-gospel-1', name:'I–IV–♭VII–IV (Gospel Soul)', desc:'The jubilant soul-gospel lift — Aretha Franklin\'s foundational sound', genre:'Gospel Soul / R&B', feel:'Jubilant, uplifting, powerful', example:'Respect — Aretha Franklin / Think — Aretha Franklin', degrees:['I','IV','♭VII','IV'], steps:[0,5,10,5], cat:'gospel',
+    bSection:{ name:'vi–IV–I–♭VII', desc:'Drop to the vi for emotional weight before the uplifting IV and ♭VII return — the verse-to-chorus arc in classic soul gospel', degrees:['vi','IV','I','♭VII'], steps:[9,5,0,10] } },
+  { id:'ns-gospel-2', name:'im–♭VImaj7–♭IIImaj7–♭VII', desc:'Cinematic gospel minor arc — devotional and sweeping', genre:'Gospel Soul / Neo-Soul', feel:'Devotional, cinematic, soulful', example:'A Change Is Gonna Come — Sam Cooke / If You Don\'t Know Me By Now — Harold Melvin', degrees:['im','♭VImaj7','♭IIImaj7','♭VII'], steps:[0,8,3,10], mixedQ:['minor','maj7','maj7','major'], cat:'gospel',
+    bSection:{ name:'♭IIImaj7–♭VImaj7–im–V', desc:'Start from the ♭III lift before descending back through ♭VI to the minor tonic — the gospel outro that brings the arc home', degrees:['♭IIImaj7','♭VImaj7','im','V'], steps:[3,8,0,7], mixedQ:['maj7','maj7','minor','major'] } },
+  { id:'ns-gospel-3', name:'I–♭VII–IV–I (Gospel Lift)', desc:'The church lift — borrowed ♭VII before the IV gives an ecstatic, transcendent feeling', genre:'Gospel / Soul', feel:'Transcendent, ecstatic, warm', example:'I\'ll Take You There — Staple Singers / Higher Ground — Stevie Wonder', degrees:['I','♭VII','IV','I'], steps:[0,10,5,0], cat:'gospel',
+    bSection:{ name:'IV–♭VII–I–V', desc:'Start the gospel lift from the IV — creates a question-and-answer structure before the ♭VII ecstasy and final resolution', degrees:['IV','♭VII','I','V'], steps:[5,10,0,7] } },
   // QUIET STORM
-  { id:'ns-qs-1', name:'Imaj9–VI7–ii9–V13',           desc:'Smooth R&B slow jam — the definitive quiet storm sound of the 80s and 90s', genre:'Quiet Storm / Smooth R&B', feel:'Silky, intimate, slow', example:'Never Too Much — Luther Vandross / Endless Love — Diana Ross & Lionel Richie', degrees:['Imaj9','VI7','ii9','V13'], steps:[0,9,2,7], mixedQ:['maj7','dom7','min7','dom7'], cat:'quietstorm' },
-  { id:'ns-qs-2', name:'im9–♭VImaj9–♭IIImaj7–V9',    desc:'Minor quiet storm arc — midnight R&B, sophisticated and sensual', genre:'Quiet Storm / R&B Ballad', feel:'Midnight, sensual, brooding', example:'No Ordinary Love — Sade / Bed — J. Holiday', degrees:['im9','♭VImaj9','♭IIImaj7','V9'], steps:[0,8,3,7], mixedQ:['min7','maj7','maj7','dom7'], cat:'quietstorm' },
-  { id:'ns-qs-3', name:'Imaj9–iii7–♭VIImaj7–IV9',    desc:'Slow jam lateral movement — feels like drifting, lush and unresolved', genre:'R&B Ballad / Neo-Soul', feel:'Drifting, lush, romantic', example:'Spend My Life With You — Eric Benét / Angel of Mine — Monica', degrees:['Imaj9','iii7','♭VIImaj7','IV9'], steps:[0,4,10,5], mixedQ:['maj7','min7','maj7','dom7'], cat:'quietstorm' },
+  { id:'ns-qs-1', name:'Imaj9–VI7–ii9–V13',           desc:'Smooth R&B slow jam — the definitive quiet storm sound of the 80s and 90s', genre:'Quiet Storm / Smooth R&B', feel:'Silky, intimate, slow', example:'Never Too Much — Luther Vandross / Endless Love — Diana Ross & Lionel Richie', degrees:['Imaj9','VI7','ii9','V13'], steps:[0,9,2,7], mixedQ:['maj7','dom7','min7','dom7'], cat:'quietstorm',
+    bSection:{ name:'IVmaj9–♭VII9–ii9–V13', desc:'Float from the IV with a borrowed ♭VII before the smooth ii–V — the Luther Vandross bridge that lingers before resolution', degrees:['IVmaj9','♭VII9','ii9','V13'], steps:[5,10,2,7], mixedQ:['maj7','dom7','min7','dom7'] } },
+  { id:'ns-qs-2', name:'im9–♭VImaj9–♭IIImaj7–V9',    desc:'Minor quiet storm arc — midnight R&B, sophisticated and sensual', genre:'Quiet Storm / R&B Ballad', feel:'Midnight, sensual, brooding', example:'No Ordinary Love — Sade / Bed — J. Holiday', degrees:['im9','♭VImaj9','♭IIImaj7','V9'], steps:[0,8,3,7], mixedQ:['min7','maj7','maj7','dom7'], cat:'quietstorm',
+    bSection:{ name:'♭IIImaj7–♭VImaj9–im9–ii∅', desc:'Start from the ♭III plateau before floating through ♭VI back to the minor — removes the V resolution for a more suspended, midnight quality', degrees:['♭IIImaj7','♭VImaj9','im9','ii∅'], steps:[3,8,0,2], mixedQ:['maj7','maj7','min7','min7'] } },
+  { id:'ns-qs-3', name:'Imaj9–iii7–♭VIImaj7–IV9',    desc:'Slow jam lateral movement — feels like drifting, lush and unresolved', genre:'R&B Ballad / Neo-Soul', feel:'Drifting, lush, romantic', example:'Spend My Life With You — Eric Benét / Angel of Mine — Monica', degrees:['Imaj9','iii7','♭VIImaj7','IV9'], steps:[0,4,10,5], mixedQ:['maj7','min7','maj7','dom7'], cat:'quietstorm',
+    bSection:{ name:'vi9–ii9–V9–Imaj9', desc:'Resolve the drift with a full ii–V–I cadence from the vi — the quiet storm chorus that finally gives the listener the resolution they\'ve been waiting for', degrees:['vi9','ii9','V9','Imaj9'], steps:[9,2,7,0], mixedQ:['min7','min7','dom7','maj7'] } },
 ];
 
 // ════════════════════════════════════════════════════════════════
@@ -2193,9 +2325,11 @@ const NEO_PROGRESSIONS = [
 let jazzProgFilter = 'all';
 let jazzProgKey    = 'C';
 let currentJazzProgId = 'j-ii-V-I-maj';
+let jazzProgSection   = 'a';
 let neoProgFilter  = 'all';
 let neoProgKey     = 'C';
 let currentNeoProgId  = 'ns-lush-1';
+let neoProgSection    = 'a';
 let jazzProgPosition  = 'open';
 let neoProgPosition   = 'open';
 
@@ -2205,7 +2339,8 @@ function renderGenericProgressions(params) {
   const {
     progressions, filter, currentId, key, position,
     contentId, listDesktopId, accentColor,
-    setPositionFnName, selectProgFn   // setPositionFnName is a string for onclick HTML; selectProgFn is a real function
+    setPositionFnName, selectProgFn,
+    section, setSectionFn   // 'a'|'b' and setter function name string
   } = params;
 
   const keyIdx  = NOTES.indexOf(key);
@@ -2232,11 +2367,15 @@ function renderGenericProgressions(params) {
 
   visible.forEach(prog => {
     const isActive = prog.id === currentId;
-    const chords = prog.steps.map((s, i) => {
+
+    // Resolve active section data
+    const hasB         = !!prog.bSection;
+    const activeSection = (hasB && section === 'b') ? prog.bSection : prog;
+    const chords = activeSection.steps.map((s, i) => {
       const ni = (keyIdx + s) % 12;
-      const q  = prog.mixedQ ? prog.mixedQ[i] : (prog.minor ? 'minor' : (['ii','vi','iii','i','iv','v'].includes((prog.degrees||[])[i]) ? 'minor' : 'major'));
+      const q  = activeSection.mixedQ ? activeSection.mixedQ[i] : (activeSection.minor ? 'minor' : (['ii','vi','iii','i','iv','v'].includes((activeSection.degrees||[])[i]) ? 'minor' : 'major'));
       const sym = q === 'min7' ? 'm7' : q === 'dom7' ? '7' : q === 'maj7' ? 'maj7' : q === 'minor' ? 'm' : '';
-      return { name: NOTES[ni]+sym, root: NOTES[ni], quality: q, degree: (prog.degrees||[])[i]||'' };
+      return { name: NOTES[ni]+sym, root: NOTES[ni], quality: q, degree: (activeSection.degrees||[])[i]||'' };
     });
 
     const cardDiv = document.createElement('div');
@@ -2256,6 +2395,18 @@ function renderGenericProgressions(params) {
       detail.className = 'prog-detail';
       detail.style.borderColor = accentColor;
       detail.style.borderTopColor = accentColor;
+
+      // Section toggle
+      const sectionToggle = hasB ? `
+        <div class="section-toggle">
+          <span class="section-label-txt">Section</span>
+          <div class="section-btn-wrap">
+            <button class="section-btn${section==='a'?' active':''}" onclick="${setSectionFn}('a','${prog.id}')" style="${section==='a'?'background:'+accentColor+';border-color:'+accentColor+'':''}">A — Head</button>
+            <button class="section-btn${section==='b'?' active':''}" onclick="${setSectionFn}('b','${prog.id}')" style="${section==='b'?'background:'+accentColor+';border-color:'+accentColor+'':''}">B — Bridge</button>
+          </div>
+        </div>
+        ${section==='b' ? `<div class="section-desc">B: <strong>${prog.bSection.name}</strong> — ${prog.bSection.desc}</div>` : ''}
+      ` : '';
 
       const posRow = `<div class="pos-row">
         <span class="pos-label">Position</span>
@@ -2292,7 +2443,7 @@ function renderGenericProgressions(params) {
             ${buildFretboardSVG(v.voicing, v.baseFret)}
           </div>`).join('')}</div>`;
 
-      detail.innerHTML = posRow + seq + tip + diagHtml;
+      detail.innerHTML = sectionToggle + posRow + seq + tip + diagHtml;
       content.appendChild(detail);
     }
   });
@@ -2315,11 +2466,12 @@ function syncJazzProgKey(val) {
   renderJazzProgressions();
   updateDrawerLabel();
 }
-function selectJazzProg(id) { currentJazzProgId=id; renderJazzProgressions(); }
+function selectJazzProg(id) { currentJazzProgId=id; jazzProgSection='a'; renderJazzProgressions(); }
 function setJazzProgPos(pos, btn) {
   jazzProgPosition = pos;
   renderJazzProgressions();
 }
+function setJazzProgSection(section) { jazzProgSection = section; renderJazzProgressions(); }
 function renderJazzProgressions() {
   renderGenericProgressions({
     progressions:     JAZZ_PROGRESSIONS,
@@ -2332,6 +2484,8 @@ function renderJazzProgressions() {
     accentColor:      'var(--tab-jazz-progs)',
     setPositionFnName:'setJazzProgPos',
     selectProgFn:     selectJazzProg,
+    section:          jazzProgSection,
+    setSectionFn:     'setJazzProgSection',
   });
 }
 
@@ -2352,11 +2506,12 @@ function syncNeoProgKey(val) {
   renderNeoProgressions();
   updateDrawerLabel();
 }
-function selectNeoProg(id) { currentNeoProgId=id; renderNeoProgressions(); }
+function selectNeoProg(id) { currentNeoProgId=id; neoProgSection='a'; renderNeoProgressions(); }
 function setNeoProgPos(pos, btn) {
   neoProgPosition = pos;
   renderNeoProgressions();
 }
+function setNeoProgSection(section) { neoProgSection = section; renderNeoProgressions(); }
 function renderNeoProgressions() {
   renderGenericProgressions({
     progressions:     NEO_PROGRESSIONS,
@@ -2369,6 +2524,8 @@ function renderNeoProgressions() {
     accentColor:      'var(--tab-neo-progs)',
     setPositionFnName:'setNeoProgPos',
     selectProgFn:     selectNeoProg,
+    section:          neoProgSection,
+    setSectionFn:     'setNeoProgSection',
   });
 }
 
@@ -2614,17 +2771,39 @@ function unlockAudioOnFirstTouch() {
   if (audioUnlocked) return;
   audioUnlocked = true;
 
-  const ctx = getAudioCtx();
+  // Create context with 'playback' category so iOS treats it as media
+  // (not affected by the silent/ringer switch)
+  if (!audioCtx) {
+    try {
+      // iOS Safari supports this to bypass the silent switch
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)(
+        { latencyHint: 'playback' }
+      );
+    } catch(e) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    reverbNode = null;
+    reverbCtx  = null;
+  }
 
-  // Play a zero-length silent buffer — this is the iOS unlock gesture
+  const ctx = audioCtx;
+
+  // Play a silent buffer — iOS requires an actual audio operation in the gesture
   const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
   const src = ctx.createBufferSource();
   src.buffer = buf;
   src.connect(ctx.destination);
   src.start(0);
 
-  // Resume synchronously — must happen inside the gesture handler
   if (ctx.state === 'suspended') ctx.resume();
+
+  // Also trigger the hidden <audio> element — this registers the page as a
+  // media session on iOS, which moves all audio to the media channel
+  // (bypasses silent switch entirely)
+  const silentAudio = document.getElementById('silentAudio');
+  if (silentAudio) {
+    silentAudio.play().catch(() => {}); // ignore errors, this is just for registration
+  }
 }
 
 document.addEventListener('touchstart', unlockAudioOnFirstTouch, { once: true, passive: true });
