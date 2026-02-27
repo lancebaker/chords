@@ -1875,8 +1875,7 @@ function renderProgressions() {
 
       // Info tip
       const tip = `<div class="tips-box" style="margin-bottom:0.85rem">
-        <strong>${prog.name}</strong> — ${prog.desc}. Feel: <em>${prog.feel}</em>.<br>
-        In <strong>${key}</strong>: ${sectionChords.map(c=>c.name).join(' → ')}
+        <strong>${prog.name}</strong> — ${prog.desc}. Feel: <em>${prog.feel}</em>.
         ${prog.example ? `<br><span style="color:var(--gold-light);font-size:0.9rem">♪ ${prog.example}</span>` : ''}
       </div>`;
 
@@ -1895,8 +1894,18 @@ function renderProgressions() {
 
       detail.innerHTML = sectionToggle + posRow + seq + tip + diagHtml;
       content.appendChild(detail);
+
+      // Scroll so the top of the selected card is visible, not the bottom of the detail
+      requestAnimationFrame(() => scrollProgCardIntoView(cardDiv));
     }
   });
+}
+
+function scrollProgCardIntoView(cardEl) {
+  if (!cardEl) return;
+  // scrollIntoView lets the browser find the correct scroll container automatically
+  // works for both #desktop-main (desktop) and #app-main (mobile)
+  cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function getVoicingsForChords(chords) {
@@ -2423,7 +2432,7 @@ function renderGenericProgressions(params) {
 
       const tip = `<div class="tips-box" style="border-color:${accentColor};margin-bottom:0.85rem">
         <strong style="color:${accentColor}">${prog.name}</strong> — ${prog.desc}.<br>
-        Feel: <em>${prog.feel}</em>. In <strong>${key}</strong>: ${chords.map(c=>c.name).join(' → ')}
+        Feel: <em>${prog.feel}</em>.
         ${prog.example ? `<br><span style="color:var(--gold-light);font-size:0.9rem">♪ ${prog.example}</span>` : ''}
       </div>`;
 
@@ -2445,6 +2454,9 @@ function renderGenericProgressions(params) {
 
       detail.innerHTML = sectionToggle + posRow + seq + tip + diagHtml;
       content.appendChild(detail);
+
+      // Scroll so top of selected card is visible
+      requestAnimationFrame(() => scrollProgCardIntoView(cardDiv));
     }
   });
 }
